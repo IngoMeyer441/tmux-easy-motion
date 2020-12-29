@@ -70,6 +70,38 @@ MOTION_TO_REGEX = {
 }
 
 
+class MissingDimStyleError(Exception):
+    pass
+
+
+class InvalidDimStyleError(Exception):
+    pass
+
+
+class MissingHighlightStyleError(Exception):
+    pass
+
+
+class InvalidHighlightStyleError(Exception):
+    pass
+
+
+class MissingHighlight2FirstStyleError(Exception):
+    pass
+
+
+class InvalidHighlight2FirstStyleError(Exception):
+    pass
+
+
+class MissingHighlight2SecondStyleError(Exception):
+    pass
+
+
+class InvalidHighlight2SecondStyleError(Exception):
+    pass
+
+
 class MissingTargetKeysError(Exception):
     pass
 
@@ -113,33 +145,128 @@ class ReadState(object):
     HIGHLIGHT = 3
 
 
-class TerminalCodes:
-    class Color:
-        BLACK = "\033[30m"
-        RED = "\033[31m"
-        GREEN = "\033[32m"
-        YELLOW = "\033[33m"
-        BLUE = "\033[34m"
-        PURPLE = "\033[35m"
-        CYAN = "\033[36m"
-        GRAY = "\033[37m"
-        LIGHT_BLACK = "\033[90m"
-        LIGHT_RED = "\033[91m"
-        LIGHT_GREEN = "\033[92m"
-        LIGHT_YELLOW = "\033[93m"
-        LIGHT_BLUE = "\033[94m"
-        LIGHT_PURPLE = "\033[95m"
-        LIGHT_CYAN = "\033[96m"
-        WHITE = "\033[97m"
+class TerminalCodes(object):
+    class Style(object):
         BLINK = "\033[5m"
         BOLD = "\033[1m"
+        DIM = "\033[2m"
+        ITALIC = "\033[3m"
+        UNDERLINE = "\033[4m"
+        REVERSE = "\033[7m"
+        CONCEAL = "\033[8m"
+        OVERLINE = "\033[53m"
+        STRIKE = "\033[9m"
+        DOUBLE_UNDERLINE = "\033[4:2m"
+        CURLY_UNDERLINE = "\033[4:3m"
+        DOTTED_UNDERLINE = "\033[4:4m"
+        DASHED_UNDERLINE = "\033[4:5m"
         RESET = "\033[0m"
+
+        @classmethod
+        def color16(cls, name, bg=False):
+            # type: (str, bool) -> str
+            name_to_index = {
+                "black": 0,
+                "red": 1,
+                "green": 2,
+                "yellow": 3,
+                "blue": 4,
+                "magenta": 5,
+                "cyan": 6,
+                "white": 7,
+                "brightblack": 8,
+                "brightred": 9,
+                "brightgreen": 10,
+                "brightyellow": 11,
+                "brightblue": 12,
+                "brightmagenta": 13,
+                "brightcyan": 14,
+                "brightwhite": 15,
+            }  # type: Dict[str, int]
+            if name not in name_to_index:
+                raise KeyError(
+                    '"{}" is not a valid color name. Valid color names are: "{}"'.format(
+                        name, '", "'.join(name_to_index.keys())
+                    )
+                )
+            color_index = name_to_index[name]
+            ansi_code = 30 + color_index
+            if color_index > 7:
+                ansi_code += 60 - 8
+            if bg:
+                ansi_code += 10
+            return "\033[{:d}m".format(ansi_code)
+
+        @classmethod
+        def color256(cls, color_index, bg=False):
+            # type: (int, bool) -> str
+            if not 0 <= color_index < 256:
+                raise IndexError("The color index must be an integer between 0 and 255.")
+            return "\033[{:d};5;{:d}m".format(48 if bg else 38, color_index)
+
+        @classmethod
+        def truecolor(cls, r, g, b, bg=False):
+            # type: (int, int, int, bool) -> str
+            if not all(0 <= c < 256 for c in (r, g, b)):
+                raise IndexError("The color indices must be integers between 0 and 255.")
+            return "\033[{:d};2;{:d};{:d};{:d}m".format(48 if bg else 38, r, g, b)
+
+        @classmethod
+        def parse_style(cls, style):
+            # type: (str) -> str
+            def color_to_code(color, bg=False):
+                # type: (str, bool) -> str
+                color = color.strip().lower()
+                color256_regex = re.compile(r"^colou?r(\d+)$")
+                truecolor_regex = re.compile(r"^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$")
+                color256_match = color256_regex.match(color)
+                if color256_match:
+                    return cls.color256(int(color256_match.group(1)), bg)
+                truecolor_match = truecolor_regex.match(color)
+                if truecolor_match:
+                    return cls.truecolor(*[int(c, base=16) for c in truecolor_match.groups()], bg=bg)
+                return cls.color16(color, bg)
+
+            style_to_code = {
+                "none": cls.RESET,
+                "bold": cls.BOLD,
+                "bright": cls.BOLD,
+                "dim": cls.DIM,
+                "underscore": cls.UNDERLINE,
+                "blink": cls.BLINK,
+                "reverse": cls.REVERSE,
+                "hidden": cls.CONCEAL,
+                "italics": cls.ITALIC,
+                "overline": cls.OVERLINE,
+                "double-underscore": cls.DOUBLE_UNDERLINE,
+                "curly-underscore": cls.CURLY_UNDERLINE,
+                "dotted-underscore": cls.DOTTED_UNDERLINE,
+                "dashed-underscore": cls.DASHED_UNDERLINE,
+                "fg=": lambda x: color_to_code(x, bg=False),
+                "bg=": lambda x: color_to_code(x, bg=True),
+            }  # type: Dict[str, Union[str, Callable[[str], str]]]
+            style_parts = [part for part in re.split(r"(?:\s+)|(?:\s*,\s*)", style.lower()) if part]
+            style_codes = []
+            for style_part in style_parts:
+                if "=" in style_part:
+                    style_split = style_part.split("=")
+                    style_key = style_split[0] + "="
+                    style_argument = "=".join(style_split[1:])
+                else:
+                    style_key = style_part
+                    style_argument = style_part
+                style_code = style_to_code[style_key]
+                if isinstance(style_code, str):
+                    style_codes.append(style_code)
+                else:
+                    style_codes.append(style_code(style_argument))
+            return "".join(style_codes)
 
     CLEAR_SCREEN = "\033[H\033[J"
     POSITION_CURSOR = "\033[{:d};{:d}H"
 
 
-class JumpTarget:
+class JumpTarget(object):
     DIRECT = 0
     GROUP = 1
     PREVIEW = 2
@@ -155,13 +282,46 @@ def str2bool(bool_text):
 
 
 def parse_arguments():
-    # type: () -> Tuple[str, Tuple[int, int], Tuple[int, int], str, str]
+    # type: () -> Tuple[str, str, str, str, str, Tuple[int, int], Tuple[int, int], str, str]
     if PY2:
         argv = [arg.decode("utf-8") for arg in sys.argv]
     else:
         argv = list(sys.argv)
     # Remove program name from argument vector
     argv.pop(0)
+    # Extract dim style
+    if not argv:
+        raise MissingDimStyleError("No dim style given.")
+    try:
+        dim_style = argv.pop(0)
+        dim_style_code = TerminalCodes.Style.parse_style(dim_style)
+    except (IndexError, KeyError):
+        raise InvalidDimStyleError('"{}" is not a valid style.'.format(dim_style))
+    # Extract highlight style
+    if not argv:
+        raise MissingHighlightStyleError("No highlight style given.")
+    try:
+        highlight_style = argv.pop(0)
+        highlight_style_code = TerminalCodes.Style.parse_style(highlight_style)
+    except (IndexError, KeyError):
+        raise InvalidHighlightStyleError('"{}" is not a valid style.'.format(highlight_style))
+    # Extract highlight 2 first style
+    if not argv:
+        raise MissingHighlight2FirstStyleError("No highlight 2 first style given.")
+    try:
+        highlight_2_first_style = argv.pop(0)
+        highlight_2_first_style_code = TerminalCodes.Style.parse_style(highlight_2_first_style)
+    except (IndexError, KeyError):
+        raise InvalidHighlight2FirstStyleError('"{}" is not a valid style.'.format(highlight_2_first_style))
+    # Extract highlight 2 second style
+    if not argv:
+        raise MissingHighlight2SecondStyleError("No highlight 2 second style given.")
+    try:
+        highlight_2_second_style = argv.pop(0)
+        highlight_2_second_style_code = TerminalCodes.Style.parse_style(highlight_2_second_style)
+    except (IndexError, KeyError):
+        raise InvalidHighlight2SecondStyleError('"{}" is not a valid style.'.format(highlight_2_second_style))
+    # Extract target keys
     if not argv:
         raise MissingTargetKeysError("No target keys given.")
     target_keys = argv.pop(0)
@@ -191,7 +351,17 @@ def parse_arguments():
     if not argv:
         raise MissingJumpCommandBufferFilepath("No jump command buffer filepath.")
     command_pipe_filepath = argv.pop(0)
-    return target_keys, cursor_position_row_col, pane_size, capture_buffer_filepath, command_pipe_filepath
+    return (
+        dim_style_code,
+        highlight_style_code,
+        highlight_2_first_style_code,
+        highlight_2_second_style_code,
+        target_keys,
+        cursor_position_row_col,
+        pane_size,
+        capture_buffer_filepath,
+        command_pipe_filepath,
+    )
 
 
 def convert_row_col_to_text_pos(row, col, text):
@@ -370,12 +540,21 @@ def print_text(capture_buffer):
     sys.stdout.flush()
 
 
-def print_text_with_targets(capture_buffer, grouped_indices, target_keys, terminal_width):
-    # type: (str, Iterable[Any], str, int) -> None
+def print_text_with_targets(
+    capture_buffer,
+    grouped_indices,
+    dim_style_code,
+    highlight_style_code,
+    highlight_2_first_style_code,
+    highlight_2_second_style_code,
+    target_keys,
+    terminal_width,
+):
+    # type: (str, Iterable[Any], str, str, str, str, str, int) -> None
     target_type_to_color = {
-        JumpTarget.DIRECT: TerminalCodes.Color.RED + TerminalCodes.Color.BOLD,
-        JumpTarget.GROUP: TerminalCodes.Color.LIGHT_YELLOW + TerminalCodes.Color.BOLD,
-        JumpTarget.PREVIEW: TerminalCodes.Color.YELLOW + TerminalCodes.Color.BOLD,
+        JumpTarget.DIRECT: highlight_style_code,
+        JumpTarget.GROUP: highlight_2_first_style_code,
+        JumpTarget.PREVIEW: highlight_2_second_style_code,
     }
     jump_targets = sorted(generate_jump_targets(grouped_indices, target_keys), key=lambda x: x[1])
     out_buffer_parts = []
@@ -387,24 +566,28 @@ def print_text_with_targets(capture_buffer, grouped_indices, target_keys, termin
             append_to_buffer = True
         else:
             # The (preview) target will be printed in an extra column at the line ending
-            # -> Check if there is one addtional column available, otherwise skip this preview
+            # -> Check if there is one additional column available, otherwise skip this preview
             append_extra_newline = True
             previous_newline_index = capture_buffer.rfind("\n", text_pos - terminal_width, text_pos)
-            if previous_newline_index > 0:
+            if previous_newline_index != 0:
                 append_to_buffer = True
         if append_to_buffer:
             out_buffer_parts.extend(
                 [
+                    dim_style_code,
                     capture_buffer[previous_text_pos + 1 : text_pos],
+                    TerminalCodes.Style.RESET,
                     target_type_to_color[target_type],
                     target_key,
-                    TerminalCodes.Color.RESET,
+                    TerminalCodes.Style.RESET,
                 ]
             )
         if append_extra_newline:
             out_buffer_parts.append("\n")
         previous_text_pos = text_pos
-    out_buffer_parts.append(capture_buffer[previous_text_pos + 1 :].rstrip())
+    rest_of_capture_buffer = capture_buffer[previous_text_pos + 1 :].rstrip()
+    if rest_of_capture_buffer:
+        out_buffer_parts.extend([dim_style_code, rest_of_capture_buffer, TerminalCodes.Style.RESET])
     sys.stdout.write(TerminalCodes.CLEAR_SCREEN)
     sys.stdout.write("".join(out_buffer_parts).rstrip())
     sys.stdout.flush()
@@ -422,8 +605,18 @@ def print_jump_target(row, col, command_pipe):
     command_pipe.flush()
 
 
-def handle_user_input(target_keys, cursor_position_row_col, pane_size, capture_buffer_filepath, command_pipe_filepath):
-    # type: (str, Tuple[int, int], Tuple[int, int], str, str) -> None
+def handle_user_input(
+    dim_style_code,
+    highlight_style_code,
+    highlight_2_first_style_code,
+    highlight_2_second_style_code,
+    target_keys,
+    cursor_position_row_col,
+    pane_size,
+    capture_buffer_filepath,
+    command_pipe_filepath,
+):
+    # type: (str, str, str, str, str, Tuple[int, int], Tuple[int, int], str, str) -> None
     fd = sys.stdin.fileno()
 
     def read_capture_buffer():
@@ -499,7 +692,16 @@ def handle_user_input(target_keys, cursor_position_row_col, pane_size, capture_b
                     if not isinstance(grouped_indices, int):
                         if not grouped_indices:  # if no targets found
                             break
-                        print_text_with_targets(capture_buffer, grouped_indices, target_keys, pane_width)
+                        print_text_with_targets(
+                            capture_buffer,
+                            grouped_indices,
+                            dim_style_code,
+                            highlight_style_code,
+                            highlight_2_first_style_code,
+                            highlight_2_second_style_code,
+                            target_keys,
+                            pane_width,
+                        )
                         position_cursor(row, col)
                         read_state = ReadState.TARGET
                     else:
@@ -518,6 +720,10 @@ def main():
     exit_code = 0
     try:
         (
+            dim_style_code,
+            highlight_style_code,
+            highlight_2_first_style_code,
+            highlight_2_second_style_code,
             target_keys,
             cursor_position_row_col,
             pane_size,
@@ -525,10 +731,32 @@ def main():
             command_pipe_filepath,
         ) = parse_arguments()
         handle_user_input(
-            target_keys, cursor_position_row_col, pane_size, capture_buffer_filepath, command_pipe_filepath
+            dim_style_code,
+            highlight_style_code,
+            highlight_2_first_style_code,
+            highlight_2_second_style_code,
+            target_keys,
+            cursor_position_row_col,
+            pane_size,
+            capture_buffer_filepath,
+            command_pipe_filepath,
         )
     except (
+        MissingDimStyleError,
+        InvalidDimStyleError,
+        MissingHighlightStyleError,
+        InvalidHighlightStyleError,
+        MissingHighlight2FirstStyleError,
+        InvalidHighlight2FirstStyleError,
+        MissingHighlight2SecondStyleError,
+        InvalidHighlight2SecondStyleError,
+        MissingTargetKeysError,
+        MissingCursorPositionError,
+        InvalidCursorPositionError,
+        MissingPaneSizeError,
+        InvalidPaneSizeError,
         MissingCaptureBufferFilepath,
+        MissingJumpCommandBufferFilepath,
         InvalidMotionError,
         InvalidTargetError,
     ):
