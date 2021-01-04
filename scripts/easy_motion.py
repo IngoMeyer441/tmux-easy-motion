@@ -6,6 +6,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import codecs
 import os
 import re
 import sys
@@ -102,6 +103,14 @@ class InvalidHighlight2SecondStyleError(Exception):
     pass
 
 
+class MissingMotionError(Exception):
+    pass
+
+
+class InvalidMotionError(Exception):
+    pass
+
+
 class MissingTargetKeysError(Exception):
     pass
 
@@ -122,11 +131,15 @@ class InvalidPaneSizeError(Exception):
     pass
 
 
-class MissingCaptureBufferFilepath(Exception):
+class MissingCaptureBufferFilepathError(Exception):
     pass
 
 
-class MissingJumpCommandBufferFilepath(Exception):
+class MissingJumpCommandPipeFilepathError(Exception):
+    pass
+
+
+class MissingTargetKeyPipeFilepathError(Exception):
     pass
 
 
@@ -139,10 +152,9 @@ class InvalidTargetError(Exception):
 
 
 class ReadState(object):
-    MOTION = 0
-    MOTION_ARGUMENT = 1
-    TARGET = 2
-    HIGHLIGHT = 3
+    MOTION_ARGUMENT = 0
+    TARGET = 1
+    HIGHLIGHT = 2
 
 
 class TerminalCodes(object):
@@ -272,17 +284,8 @@ class JumpTarget(object):
     PREVIEW = 2
 
 
-def str2bool(bool_text):
-    # type: (str) -> bool
-    if bool_text.lower() in ("true", "on", "yes", "1"):
-        return True
-    elif bool_text.lower() in ("false", "off", "no", "0"):
-        return False
-    raise ValueError
-
-
 def parse_arguments():
-    # type: () -> Tuple[str, str, str, str, str, Tuple[int, int], Tuple[int, int], str, str]
+    # type: () -> Tuple[str, str, str, str, str, str, Tuple[int, int], Tuple[int, int], str, str, str]
     if PY2:
         argv = [arg.decode("utf-8") for arg in sys.argv]
     else:
@@ -321,6 +324,12 @@ def parse_arguments():
         highlight_2_second_style_code = TerminalCodes.Style.parse_style(highlight_2_second_style)
     except (IndexError, KeyError):
         raise InvalidHighlight2SecondStyleError('"{}" is not a valid style.'.format(highlight_2_second_style))
+    # Extract motion
+    if not argv:
+        raise MissingMotionError("No motion given.")
+    if argv[0] not in VALID_MOTIONS:
+        raise InvalidMotionError('The string "{}" is not in a valid motion.'.format(argv[0]))
+    motion = argv.pop(0)
     # Extract target keys
     if not argv:
         raise MissingTargetKeysError("No target keys given.")
@@ -345,22 +354,28 @@ def parse_arguments():
     argv.pop(0)
     # Extract capture buffer filepath
     if not argv:
-        raise MissingCaptureBufferFilepath("No tmux capture buffer filepath given.")
+        raise MissingCaptureBufferFilepathError("No tmux capture buffer filepath given.")
     capture_buffer_filepath = argv.pop(0)
-    # Extract jump command out filepath
+    # Extract jump command pipe filepath
     if not argv:
-        raise MissingJumpCommandBufferFilepath("No jump command buffer filepath.")
+        raise MissingJumpCommandPipeFilepathError("No jump command pipe filepath given.")
     command_pipe_filepath = argv.pop(0)
+    # Extract target key pipe filepath
+    if not argv:
+        raise MissingTargetKeyPipeFilepathError("No target key pipe filepath given.")
+    target_key_pipe_filepath = argv.pop(0)
     return (
         dim_style_code,
         highlight_style_code,
         highlight_2_first_style_code,
         highlight_2_second_style_code,
+        motion,
         target_keys,
         cursor_position_row_col,
         pane_size,
         capture_buffer_filepath,
         command_pipe_filepath,
+        target_key_pipe_filepath,
     )
 
 
@@ -610,18 +625,20 @@ def handle_user_input(
     highlight_style_code,
     highlight_2_first_style_code,
     highlight_2_second_style_code,
+    motion,
     target_keys,
     cursor_position_row_col,
     pane_size,
     capture_buffer_filepath,
     command_pipe_filepath,
+    target_key_pipe_filepath,
 ):
-    # type: (str, str, str, str, str, Tuple[int, int], Tuple[int, int], str, str) -> None
+    # type: (str, str, str, str, str, str, Tuple[int, int], Tuple[int, int], str, str, str) -> None
     fd = sys.stdin.fileno()
 
     def read_capture_buffer():
         # type: () -> str
-        with open(capture_buffer_filepath, "r") as f:
+        with codecs.open(capture_buffer_filepath, "r", encoding="utf-8") as f:
             capture_buffer = f.read()
         return capture_buffer
 
@@ -641,36 +658,29 @@ def handle_user_input(
 
     old_term_settings = setup_terminal()
 
-    read_state = ReadState.MOTION
-    motion = None
+    if motion in MOTIONS_WITH_ARGUMENT:
+        read_state = ReadState.MOTION_ARGUMENT
+    else:
+        read_state = ReadState.HIGHLIGHT
     motion_argument = None
     target = None
     grouped_indices = None
+    first_highlight = True
     try:
-        with open(command_pipe_filepath, "w") as command_pipe:
+        with codecs.open(command_pipe_filepath, "w", encoding="utf-8") as command_pipe:
             capture_buffer = read_capture_buffer()
             row, col = cursor_position_row_col
             pane_width, pane_height = pane_size
             cursor_position = convert_row_col_to_text_pos(row, col, capture_buffer)
-            print_text(capture_buffer)
-            position_cursor(row, col)
-            print_ready(command_pipe)
             while True:
                 if read_state != ReadState.HIGHLIGHT:
-                    next_key = os.read(fd, 80)[:1].decode("ascii")  # blocks until any amount of bytes is available
-                if read_state == ReadState.MOTION:
-                    if motion is None:
-                        motion = next_key
-                    else:
-                        motion += next_key
-                    if motion != "g":  # `g` always needs a second key press
-                        if motion not in VALID_MOTIONS:
-                            raise InvalidMotionError('The key "{}" is no valid motion.'.format(motion))
-                        if motion in MOTIONS_WITH_ARGUMENT:
-                            read_state = ReadState.MOTION_ARGUMENT
-                        else:
-                            read_state = ReadState.HIGHLIGHT
-                elif read_state == ReadState.MOTION_ARGUMENT:
+                    # Reopen the named pipe each time because the open operation blocks till the sender also reopens
+                    # the pipe
+                    with codecs.open(target_key_pipe_filepath, "r", encoding="utf-8") as target_key_pipe:
+                        next_key = target_key_pipe.readline().rstrip("\n\r")
+                    if next_key == "esc":
+                        break
+                if read_state == ReadState.MOTION_ARGUMENT:
                     motion_argument = next_key
                     read_state = ReadState.HIGHLIGHT
                 elif read_state == ReadState.TARGET:
@@ -679,7 +689,6 @@ def handle_user_input(
                         raise InvalidTargetError('The key "{}" is no valid target.'.format(target))
                     read_state = ReadState.HIGHLIGHT
                 elif read_state == ReadState.HIGHLIGHT:
-                    assert motion is not None
                     if grouped_indices is None:
                         indices = motion_to_indices(cursor_position, capture_buffer, motion, motion_argument)
                         grouped_indices = group_indices(indices, len(target_keys))
@@ -703,6 +712,9 @@ def handle_user_input(
                             pane_width,
                         )
                         position_cursor(row, col)
+                        if first_highlight:
+                            print_ready(command_pipe)
+                            first_highlight = False
                         read_state = ReadState.TARGET
                     else:
                         # The user selected a leave target, we can break now
@@ -724,22 +736,26 @@ def main():
             highlight_style_code,
             highlight_2_first_style_code,
             highlight_2_second_style_code,
+            motion,
             target_keys,
             cursor_position_row_col,
             pane_size,
             capture_buffer_filepath,
             command_pipe_filepath,
+            target_key_pipe_filepath,
         ) = parse_arguments()
         handle_user_input(
             dim_style_code,
             highlight_style_code,
             highlight_2_first_style_code,
             highlight_2_second_style_code,
+            motion,
             target_keys,
             cursor_position_row_col,
             pane_size,
             capture_buffer_filepath,
             command_pipe_filepath,
+            target_key_pipe_filepath,
         )
     except (
         MissingDimStyleError,
@@ -750,13 +766,16 @@ def main():
         InvalidHighlight2FirstStyleError,
         MissingHighlight2SecondStyleError,
         InvalidHighlight2SecondStyleError,
+        MissingMotionError,
+        InvalidMotionError,
         MissingTargetKeysError,
         MissingCursorPositionError,
         InvalidCursorPositionError,
         MissingPaneSizeError,
         InvalidPaneSizeError,
-        MissingCaptureBufferFilepath,
-        MissingJumpCommandBufferFilepath,
+        MissingCaptureBufferFilepathError,
+        MissingJumpCommandPipeFilepathError,
+        MissingTargetKeyPipeFilepathError,
         InvalidMotionError,
         InvalidTargetError,
     ):

@@ -6,32 +6,15 @@ SCRIPTS_DIR="${CURRENT_DIR}"
 CAPTURE_PANE_FILENAME="capture.out"
 JUMP_COMMAND_PIPENAME="jump.pipe"
 
+# shellcheck source=./common_variables.sh
+source "${SCRIPTS_DIR}/common_variables.sh"
 # shellcheck source=./helpers.sh
 source "${SCRIPTS_DIR}/helpers.sh"
+# shellcheck source=./scripts/options.sh
+source "${SCRIPTS_DIR}/options.sh"
 
 
-EASY_MOTION_DIM_STYLE_DEFAULT="fg=colour242"
-EASY_MOTION_HIGHLIGHT_STYLE_DEFAULT="fg=colour196,bold"
-EASY_MOTION_HIGHLIGHT_2_FIRST_STYLE_DEFAULT="fg=brightyellow,bold"
-EASY_MOTION_HIGHLIGHT_2_SECOND_STYLE_DEFAULT="fg=yellow,bold"
-EASY_MOTION_TARGET_KEYS_DEFAULT="asdghklqwertyuiopzxcvbnmfj;"
-
-EASY_MOTION_DIM_STYLE_OPTION="@easy-motion-dim-style"
-EASY_MOTION_HIGHLIGHT_STYLE_OPTION="@easy-motion-highlight-style"
-EASY_MOTION_HIGHLIGHT_2_FIRST_STYLE_OPTION="@easy-motion-highlight-2-first-style"
-EASY_MOTION_HIGHLIGHT_2_SECOND_STYLE_OPTION="@easy-motion-highlight-2-second-style"
-EASY_MOTION_TARGET_KEYS_OPTION="@easy-motion-target-keys"
-
-
-read_options() {
-    EASY_MOTION_DIM_STYLE="$(get_tmux_option "${EASY_MOTION_DIM_STYLE_OPTION}" "${EASY_MOTION_DIM_STYLE_DEFAULT}")" && \
-    EASY_MOTION_HIGHLIGHT_STYLE="$(get_tmux_option "${EASY_MOTION_HIGHLIGHT_STYLE_OPTION}" "${EASY_MOTION_HIGHLIGHT_STYLE_DEFAULT}")" && \
-    EASY_MOTION_HIGHLIGHT_2_FIRST_STYLE="$(get_tmux_option "${EASY_MOTION_HIGHLIGHT_2_FIRST_STYLE_OPTION}" "${EASY_MOTION_HIGHLIGHT_2_FIRST_STYLE_DEFAULT}")" && \
-    EASY_MOTION_HIGHLIGHT_2_SECOND_STYLE="$(get_tmux_option "${EASY_MOTION_HIGHLIGHT_2_SECOND_STYLE_OPTION}" "${EASY_MOTION_HIGHLIGHT_2_SECOND_STYLE_DEFAULT}")" && \
-    EASY_MOTION_TARGET_KEYS="$(get_tmux_option "${EASY_MOTION_TARGET_KEYS_OPTION}" "${EASY_MOTION_TARGET_KEYS_DEFAULT}")"
-}
-
-easy_motion_create_work_buffer_and_pipe () {
+easy_motion_create_work_buffer_and_pipe() {
     if [[ -z "${CAPTURE_TMP_DIRECTORY}" ]]; then
         CAPTURE_TMP_DIRECTORY="$(mktemp -d)" || return
 
@@ -64,6 +47,8 @@ easy_motion_setup() {
 easy_motion_toggle_pane() {
     if (( EASY_MOTION_PANE_ACTIVE )); then
         if [[ -n "${EASY_MOTION_ORIGINAL_PANE_ID}" ]]; then
+            tmux set-window-option key-table root && \
+            tmux switch-client -T root && \
             swap_current_pane "${EASY_MOTION_ORIGINAL_PANE_ID}" && \
             if (( EASY_MOTION_IS_PANE_ZOOMED )); then
                 zoom_pane "${EASY_MOTION_ORIGINAL_PANE_ID}"
@@ -72,6 +57,8 @@ easy_motion_toggle_pane() {
         fi
     else
         if [[ -n "${EASY_MOTION_PANE_ID}" ]]; then
+            tmux set-window-option key-table easy-motion-target && \
+            tmux switch-client -T easy-motion-target && \
             swap_current_pane "${EASY_MOTION_PANE_ID}" && \
             if (( EASY_MOTION_IS_PANE_ZOOMED )); then
                 zoom_pane "${EASY_MOTION_PANE_ID}"
@@ -82,19 +69,22 @@ easy_motion_toggle_pane() {
 }
 
 easy_motion() {
-    local ready_command jump_command jump_cursor_position
+    local motion ready_command jump_command jump_cursor_position
 
+    motion="$1"
     pane_exec "${EASY_MOTION_PANE_ID}" \
               "${SCRIPTS_DIR}/easy_motion.py" \
               "${EASY_MOTION_DIM_STYLE}" \
               "${EASY_MOTION_HIGHLIGHT_STYLE}" \
               "${EASY_MOTION_HIGHLIGHT_2_FIRST_STYLE}" \
               "${EASY_MOTION_HIGHLIGHT_2_SECOND_STYLE}" \
+              "${motion}" \
               "${EASY_MOTION_TARGET_KEYS}" \
               "${EASY_MOTION_CURSOR_POSITION}" \
               "${EASY_MOTION_PANE_SIZE}" \
               "${CAPTURE_TMP_DIRECTORY}/${CAPTURE_PANE_FILENAME}" \
-              "${CAPTURE_TMP_DIRECTORY}/${JUMP_COMMAND_PIPENAME}" && \
+              "${CAPTURE_TMP_DIRECTORY}/${JUMP_COMMAND_PIPENAME}" \
+              "${TARGET_KEY_PIPE_TMP_DIRECTORY}/${TARGET_KEY_PIPENAME}" && \
 
     {
         read -r ready_command && \
@@ -120,7 +110,7 @@ easy_motion_cleanup() {
 main() {
     read_options && \
     easy_motion_setup && \
-    easy_motion
+    easy_motion "$@"
     easy_motion_cleanup
 }
 
