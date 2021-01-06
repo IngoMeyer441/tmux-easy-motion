@@ -111,6 +111,10 @@ class InvalidMotionError(Exception):
     pass
 
 
+class MissingMotionArgumentError(Exception):
+    pass
+
+
 class MissingTargetKeysError(Exception):
     pass
 
@@ -143,18 +147,8 @@ class MissingTargetKeyPipeFilepathError(Exception):
     pass
 
 
-class InvalidMotionError(Exception):
-    pass
-
-
 class InvalidTargetError(Exception):
     pass
-
-
-class ReadState(object):
-    MOTION_ARGUMENT = 0
-    TARGET = 1
-    HIGHLIGHT = 2
 
 
 class TerminalCodes(object):
@@ -285,7 +279,7 @@ class JumpTarget(object):
 
 
 def parse_arguments():
-    # type: () -> Tuple[str, str, str, str, str, str, Tuple[int, int], Tuple[int, int], str, str, str]
+    # type: () -> Tuple[str, str, str, str, str, Optional[str], str, Tuple[int, int], Tuple[int, int], str, str, str]
     if PY2:
         argv = [arg.decode("utf-8") for arg in sys.argv]
     else:
@@ -330,6 +324,12 @@ def parse_arguments():
     if argv[0] not in VALID_MOTIONS:
         raise InvalidMotionError('The string "{}" is not in a valid motion.'.format(argv[0]))
     motion = argv.pop(0)
+    # Extract motion argument if needed
+    motion_argument = None
+    if not argv:
+        raise MissingMotionArgumentError("No motion argument given.")
+    motion_argument = argv[0] if motion in MOTIONS_WITH_ARGUMENT else None
+    argv.pop(0)
     # Extract target keys
     if not argv:
         raise MissingTargetKeysError("No target keys given.")
@@ -370,6 +370,7 @@ def parse_arguments():
         highlight_2_first_style_code,
         highlight_2_second_style_code,
         motion,
+        motion_argument,
         target_keys,
         cursor_position_row_col,
         pane_size,
@@ -481,7 +482,7 @@ def motion_to_indices(cursor_position, text, motion, motion_argument):
 
 
 def group_indices(indices, group_length):
-    # type: (Iterable[int], int) -> List[Any]
+    # type: (Iterable[int], int) -> Union[List[Any], int]
 
     def group(indices, group_length):
         # type: (Iterable[int], int) -> Union[List[Any], int]
@@ -515,10 +516,7 @@ def group_indices(indices, group_length):
         return grouped_indices
 
     grouped_indices = group(indices, group_length)
-    if isinstance(grouped_indices, int):
-        return [grouped_indices]
-    else:
-        return grouped_indices
+    return grouped_indices
 
 
 def generate_jump_targets(grouped_indices, target_keys):
@@ -614,6 +612,12 @@ def print_ready(command_pipe):
     command_pipe.flush()
 
 
+def print_single_target(command_pipe):
+    # type: (IO[str]) -> None
+    print("single-target", file=command_pipe)
+    command_pipe.flush()
+
+
 def print_jump_target(row, col, command_pipe):
     # type: (int, int, IO[str]) -> None
     print("jump {:d}:{:d}".format(row, col), file=command_pipe)
@@ -626,6 +630,7 @@ def handle_user_input(
     highlight_2_first_style_code,
     highlight_2_second_style_code,
     motion,
+    motion_argument,
     target_keys,
     cursor_position_row_col,
     pane_size,
@@ -633,7 +638,7 @@ def handle_user_input(
     command_pipe_filepath,
     target_key_pipe_filepath,
 ):
-    # type: (str, str, str, str, str, str, Tuple[int, int], Tuple[int, int], str, str, str) -> None
+    # type: (str, str, str, str, str, Optional[str], str, Tuple[int, int], Tuple[int, int], str, str, str) -> None
     fd = sys.stdin.fileno()
 
     def read_capture_buffer():
@@ -658,11 +663,6 @@ def handle_user_input(
 
     old_term_settings = setup_terminal()
 
-    if motion in MOTIONS_WITH_ARGUMENT:
-        read_state = ReadState.MOTION_ARGUMENT
-    else:
-        read_state = ReadState.HIGHLIGHT
-    motion_argument = None
     target = None
     grouped_indices = None
     first_highlight = True
@@ -673,56 +673,50 @@ def handle_user_input(
             pane_width, pane_height = pane_size
             cursor_position = convert_row_col_to_text_pos(row, col, capture_buffer)
             while True:
-                if read_state != ReadState.HIGHLIGHT:
-                    # Reopen the named pipe each time because the open operation blocks till the sender also reopens
-                    # the pipe
-                    with codecs.open(target_key_pipe_filepath, "r", encoding="utf-8") as target_key_pipe:
-                        next_key = target_key_pipe.readline().rstrip("\n\r")
-                    if next_key == "esc":
-                        break
-                if read_state == ReadState.MOTION_ARGUMENT:
-                    motion_argument = next_key
-                    read_state = ReadState.HIGHLIGHT
-                elif read_state == ReadState.TARGET:
-                    target = next_key
-                    if target not in target_keys:
+                if grouped_indices is None:
+                    indices = motion_to_indices(cursor_position, capture_buffer, motion, motion_argument)
+                    grouped_indices = group_indices(indices, len(target_keys))
+                else:
+                    try:
+                        # pylint: disable=unsubscriptable-object
+                        grouped_indices = grouped_indices[target_keys.index(target)]
+                    except IndexError:
                         raise InvalidTargetError('The key "{}" is no valid target.'.format(target))
-                    read_state = ReadState.HIGHLIGHT
-                elif read_state == ReadState.HIGHLIGHT:
-                    if grouped_indices is None:
-                        indices = motion_to_indices(cursor_position, capture_buffer, motion, motion_argument)
-                        grouped_indices = group_indices(indices, len(target_keys))
-                    else:
-                        try:
-                            # pylint: disable=unsubscriptable-object
-                            grouped_indices = grouped_indices[target_keys.index(target)]
-                        except IndexError:
-                            raise InvalidTargetError('The key "{}" is no valid target.'.format(target))
-                    if not isinstance(grouped_indices, int):
-                        if not grouped_indices:  # if no targets found
-                            break
-                        print_text_with_targets(
-                            capture_buffer,
-                            grouped_indices,
-                            dim_style_code,
-                            highlight_style_code,
-                            highlight_2_first_style_code,
-                            highlight_2_second_style_code,
-                            target_keys,
-                            pane_width,
-                        )
-                        position_cursor(row, col)
-                        if first_highlight:
-                            print_ready(command_pipe)
-                            first_highlight = False
-                        read_state = ReadState.TARGET
-                    else:
-                        # The user selected a leave target, we can break now
-                        found_index = grouped_indices
-                        print_jump_target(
-                            *convert_text_pos_to_row_col(found_index, capture_buffer), command_pipe=command_pipe
-                        )
+                if not isinstance(grouped_indices, int):
+                    if not grouped_indices:  # if no targets found
                         break
+                    print_text_with_targets(
+                        capture_buffer,
+                        grouped_indices,
+                        dim_style_code,
+                        highlight_style_code,
+                        highlight_2_first_style_code,
+                        highlight_2_second_style_code,
+                        target_keys,
+                        pane_width,
+                    )
+                    position_cursor(row, col)
+                    if first_highlight:
+                        print_ready(command_pipe)
+                        first_highlight = False
+                else:
+                    # The user selected a leave target, we can break now
+                    if first_highlight:
+                        print_single_target(command_pipe)
+                    found_index = grouped_indices
+                    print_jump_target(
+                        *convert_text_pos_to_row_col(found_index, capture_buffer), command_pipe=command_pipe
+                    )
+                    break
+                # Reopen the named pipe each time because the open operation blocks till the sender also reopens
+                # the pipe
+                with codecs.open(target_key_pipe_filepath, "r", encoding="utf-8") as target_key_pipe:
+                    next_key = target_key_pipe.readline().rstrip("\n\r")
+                if next_key == "esc":
+                    break
+                target = next_key
+                if target not in target_keys:
+                    raise InvalidTargetError('The key "{}" is no valid target.'.format(target))
     finally:
         reset_terminal(old_term_settings)
 
@@ -737,6 +731,7 @@ def main():
             highlight_2_first_style_code,
             highlight_2_second_style_code,
             motion,
+            motion_argument,
             target_keys,
             cursor_position_row_col,
             pane_size,
@@ -750,6 +745,7 @@ def main():
             highlight_2_first_style_code,
             highlight_2_second_style_code,
             motion,
+            motion_argument,
             target_keys,
             cursor_position_row_col,
             pane_size,
@@ -768,6 +764,7 @@ def main():
         InvalidHighlight2SecondStyleError,
         MissingMotionError,
         InvalidMotionError,
+        MissingMotionArgumentError,
         MissingTargetKeysError,
         MissingCursorPositionError,
         InvalidCursorPositionError,
@@ -776,7 +773,6 @@ def main():
         MissingCaptureBufferFilepathError,
         MissingJumpCommandPipeFilepathError,
         MissingTargetKeyPipeFilepathError,
-        InvalidMotionError,
         InvalidTargetError,
     ):
         exit_code = 1

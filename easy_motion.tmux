@@ -9,8 +9,9 @@ source "${SCRIPTS_DIR}/helpers.sh"
 source "${SCRIPTS_DIR}/options.sh"
 
 
-EASY_MOTION_VALID_SINGLE_MOTION_KEYS="bBeEwWjJkKfFtTsc"
+EASY_MOTION_VALID_SINGLE_MOTION_KEYS="bBeEwWjJkKc"
 EASY_MOTION_VALID_SINGLE_MOTION_KEYS_G="eE"
+EASY_MOTION_VALID_MOTION_KEYS_WITH_ARGUMENT="fFtTs"
 
 
 check_version() {
@@ -39,6 +40,9 @@ setup_bindings() {
         tmux bind-key -T easy-motion-g "${key}" run-shell -b "${SCRIPTS_DIR}/easy_motion.sh 'g${key}'"
     done < <(echo -n "${EASY_MOTION_VALID_SINGLE_MOTION_KEYS_G}")
     tmux bind-key -T easy-motion-g "Escape" switch-client -T root
+    while read -N1 key; do
+        tmux bind-key -T easy-motion "${key}" command-prompt -1 -p "character:" "run-shell -b \"${SCRIPTS_DIR}/easy_motion.sh '${key}' '%%%'\""
+    done < <(echo -n "${EASY_MOTION_VALID_MOTION_KEYS_WITH_ARGUMENT}")
     while read -N1 key; do
         case "${key}" in
             \;)
