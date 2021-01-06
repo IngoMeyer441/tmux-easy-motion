@@ -69,9 +69,10 @@ easy_motion_toggle_pane() {
 }
 
 easy_motion() {
-    local motion ready_command jump_command jump_cursor_position
+    local motion motion_argument ready_command jump_command jump_cursor_position
 
     motion="$1"
+    motion_argument="$2"
     pane_exec "${EASY_MOTION_PANE_ID}" \
               "${SCRIPTS_DIR}/easy_motion.py" \
               "${EASY_MOTION_DIM_STYLE}" \
@@ -79,6 +80,7 @@ easy_motion() {
               "${EASY_MOTION_HIGHLIGHT_2_FIRST_STYLE}" \
               "${EASY_MOTION_HIGHLIGHT_2_SECOND_STYLE}" \
               "${motion}" \
+              "${motion_argument}" \
               "${EASY_MOTION_TARGET_KEYS}" \
               "${EASY_MOTION_CURSOR_POSITION}" \
               "${EASY_MOTION_PANE_SIZE}" \
@@ -88,12 +90,17 @@ easy_motion() {
 
     {
         read -r ready_command && \
-        [[ "${ready_command}" == "ready" ]] || return
-        easy_motion_toggle_pane && \
+        if [[ "${ready_command}" == "ready" ]]; then
+            easy_motion_toggle_pane || return
+        elif [[ "${ready_command}" != "single-target" ]]; then
+            return 1
+        fi
         read -r jump_command && \
         [[ "$(awk '{ print $1 }' <<< "${jump_command}")" == "jump" ]] || return
         jump_cursor_position="$(awk '{ print $2 }' <<< "${jump_command}")" && \
-        easy_motion_toggle_pane && \
+        if [[ "${ready_command}" != "single-target" ]]; then
+            easy_motion_toggle_pane || return
+        fi
         set_cursor_position "${jump_cursor_position}"
     } < "${CAPTURE_TMP_DIRECTORY}/${JUMP_COMMAND_PIPENAME}"
 }
