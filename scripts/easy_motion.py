@@ -435,14 +435,19 @@ def adjust_text(cursor_position, text, is_forward_motion, motion):
             text = text[cursor_position + first_line_end_index :]
             indices_offset = cursor_position + first_line_end_index
         else:
-            text = text[cursor_position + 1 :]
-            indices_offset = cursor_position + 1
+            # Take one character more at the start to exclude wrong positives for word beginnings
+            # Pad one character at the end to be compatible with the handling of word endings (see below)
+            text = text[cursor_position:] + " "
+            indices_offset = cursor_position
     else:
         if motion in LINEWISE_MOTIONS:
             latest_line_start_index = find_latest_line_start(cursor_position, text)
             text = text[:latest_line_start_index]
         else:
-            text = text[:cursor_position]
+            # Take one character more at the end to exclude wrong positives for word endings
+            # Pad one character at the start to be compatible with the handling of word beginnings (see above)
+            text = " " + text[: cursor_position + 1]
+            indices_offset = -1
     return text, indices_offset
 
 
@@ -472,11 +477,12 @@ def motion_to_indices(cursor_position, text, motion, motion_argument):
         matches = regex.finditer(text)
         if not is_forward_motion:
             matches = reversed(list(matches))
+        is_linewise_motion = motion in LINEWISE_MOTIONS
         indices = (
             match_obj.start(i) + indices_offset
             for match_obj in matches
             for i in range(1, regex.groups + 1)
-            if match_obj.start(i) >= 0
+            if match_obj.start(i) >= 0 and (is_linewise_motion or (0 < match_obj.start(i) < len(text) - 1))
         )
     return indices
 
