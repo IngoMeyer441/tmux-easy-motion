@@ -61,7 +61,7 @@ setup_bindings() {
                 ;;
         esac
         case "${key}" in
-            \")
+            \"|\`)
                 target_key="\\${key}"
                 ;;
             *)
