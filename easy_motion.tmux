@@ -27,7 +27,7 @@ create_target_key_pipe() {
 }
 
 setup_bindings() {
-    local key tmux_key
+    local key target_key tmux_key
 
     tmux bind-key "${EASY_MOTION_KEY}" switch-client -T easy-motion
     tmux bind-key -T copy-mode-vi "${EASY_MOTION_KEY}" switch-client -T easy-motion
@@ -60,8 +60,16 @@ setup_bindings() {
                 tmux_key="${key}"
                 ;;
         esac
+        case "${key}" in
+            \")
+                target_key="\\${key}"
+                ;;
+            *)
+                target_key="${key}"
+                ;;
+        esac
         # `easy_motion.sh` switches the key table to `easy-motion-target`
-        tmux bind-key -T easy-motion-target "${tmux_key}" run-shell -b "${SCRIPTS_DIR}/pipe_target_key.sh '${key}'"
+        tmux bind-key -T easy-motion-target "${tmux_key}" run-shell -b "${SCRIPTS_DIR}/pipe_target_key.sh \"${target_key}\""
     done < <(echo -n "${EASY_MOTION_TARGET_KEYS}")
     tmux bind-key -T easy-motion-target "Escape" run-shell -b "${SCRIPTS_DIR}/pipe_target_key.sh 'esc'"
 }
