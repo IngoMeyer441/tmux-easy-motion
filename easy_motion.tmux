@@ -27,7 +27,7 @@ create_target_key_pipe() {
 }
 
 setup_bindings() {
-    local key tmux_key
+    local key target_key tmux_key
 
     tmux bind-key "${EASY_MOTION_KEY}" switch-client -T easy-motion
     tmux bind-key -T copy-mode-vi "${EASY_MOTION_KEY}" switch-client -T easy-motion
@@ -41,7 +41,15 @@ setup_bindings() {
     done < <(echo -n "${EASY_MOTION_VALID_SINGLE_MOTION_KEYS_G}")
     tmux bind-key -T easy-motion-g "Escape" switch-client -T root
     while read -N1 key; do
-        tmux bind-key -T easy-motion "${key}" command-prompt -1 -p "character:" "run-shell -b \"${SCRIPTS_DIR}/easy_motion.sh '${key}' '%%%'\""
+        # `tmux source` allows to use the { } form for commands
+        # Set a temporary variable to avoid escaping issues of quotes
+        # See https://github.com/tmux/tmux/issues/2528 for details
+        tmux source - <<-EOF
+			bind-key -T easy-motion "${key}" command-prompt -1 -p "character:" {
+			    set -g @tmp-easy-motion-argument "%%%"
+			    run-shell -b '${SCRIPTS_DIR}/easy_motion.sh "${key}" "#{q:@tmp-easy-motion-argument}"'
+			}
+		EOF
     done < <(echo -n "${EASY_MOTION_VALID_MOTION_KEYS_WITH_ARGUMENT}")
     while read -N1 key; do
         case "${key}" in
@@ -52,8 +60,16 @@ setup_bindings() {
                 tmux_key="${key}"
                 ;;
         esac
+        case "${key}" in
+            \")
+                target_key="\\${key}"
+                ;;
+            *)
+                target_key="${key}"
+                ;;
+        esac
         # `easy_motion.sh` switches the key table to `easy-motion-target`
-        tmux bind-key -T easy-motion-target "${tmux_key}" run-shell -b "${SCRIPTS_DIR}/pipe_target_key.sh '${key}'"
+        tmux bind-key -T easy-motion-target "${tmux_key}" run-shell -b "${SCRIPTS_DIR}/pipe_target_key.sh \"${target_key}\""
     done < <(echo -n "${EASY_MOTION_TARGET_KEYS}")
     tmux bind-key -T easy-motion-target "Escape" run-shell -b "${SCRIPTS_DIR}/pipe_target_key.sh 'esc'"
 }
@@ -66,3 +82,5 @@ main() {
 }
 
 main
+
+# vim: ts=4 sts=4 sw=4 et ft=sh tw=120

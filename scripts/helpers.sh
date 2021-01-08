@@ -1,5 +1,12 @@
 # shellcheck shell=bash
 
+escape_double_quotes() {
+    local unescaped_string
+
+    unescaped_string="$1"
+    echo "${unescaped_string//\"/\\\"}"
+}
+
 is_tmux_version_greater_or_equal() {
     local version
 
