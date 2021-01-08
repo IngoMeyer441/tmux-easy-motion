@@ -587,8 +587,8 @@ def print_text_with_targets(
             # The (preview) target will be printed in an extra column at the line ending
             # -> Check if there is one additional column available, otherwise skip this preview
             append_extra_newline = True
-            previous_newline_index = capture_buffer.rfind("\n", text_pos - terminal_width, text_pos)
-            if previous_newline_index != 0:
+            previous_newline_index = capture_buffer.rfind("\n", text_pos - terminal_width - 1, text_pos)
+            if previous_newline_index > text_pos - terminal_width - 1:
                 append_to_buffer = True
         if append_to_buffer:
             out_buffer_parts.extend(
