@@ -73,6 +73,14 @@ easy_motion() {
 
     motion="$1"
     motion_argument="$2"
+    # First undo escaping of any character
+    if [[ "${motion_argument:0:1}" == "\\" ]]; then
+        motion_argument="${motion_argument:1}"
+    fi
+    # Then, escape double quotes, since they need to be escaped when passed to `pane_exec`
+    if [[ "${motion_argument}" == "\"" ]]; then
+        motion_argument="\\\""
+    fi
     pane_exec "${EASY_MOTION_PANE_ID}" \
               "${SCRIPTS_DIR}/easy_motion.py" \
               "${EASY_MOTION_DIM_STYLE}" \
