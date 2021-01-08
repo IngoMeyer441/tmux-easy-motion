@@ -7,6 +7,14 @@ escape_double_quotes() {
     echo "${unescaped_string//\"/\\\"}"
 }
 
+escape_double_quotes_and_backticks() {
+    local unescaped_string escaped_double_quotes
+
+    unescaped_string="$1"
+    escaped_double_quotes="$(escape_double_quotes "${unescaped_string}")"
+    echo "${escaped_double_quotes//\`/\\\`}"
+}
+
 is_tmux_version_greater_or_equal() {
     local version
 

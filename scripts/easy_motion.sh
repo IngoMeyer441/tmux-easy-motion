@@ -84,8 +84,8 @@ easy_motion() {
               "${EASY_MOTION_HIGHLIGHT_2_FIRST_STYLE}" \
               "${EASY_MOTION_HIGHLIGHT_2_SECOND_STYLE}" \
               "${motion}" \
-              "$(escape_double_quotes "${motion_argument}")" \
-              "$(escape_double_quotes "${EASY_MOTION_TARGET_KEYS}")" \
+              "$(escape_double_quotes_and_backticks "${motion_argument}")" \
+              "$(escape_double_quotes_and_backticks "${EASY_MOTION_TARGET_KEYS}")" \
               "${EASY_MOTION_CURSOR_POSITION}" \
               "${EASY_MOTION_PANE_SIZE}" \
               "${CAPTURE_TMP_DIRECTORY}/${CAPTURE_PANE_FILENAME}" \
