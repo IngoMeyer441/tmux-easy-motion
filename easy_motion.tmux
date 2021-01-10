@@ -15,8 +15,8 @@ EASY_MOTION_VALID_MOTION_KEYS_WITH_ARGUMENT="fFtTs"
 
 
 check_version() {
-    if ! is_tmux_version_greater_or_equal "2.4"; then
-        display_message "tmux-easy-motion needs tmux version 2.4 or newer."
+    if ! is_tmux_version_greater_or_equal "3.0"; then
+        display_message "tmux-easy-motion needs tmux version 3.0 or newer."
         return 1
     fi
 }
