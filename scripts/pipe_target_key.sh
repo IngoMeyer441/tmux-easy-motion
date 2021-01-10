@@ -22,6 +22,7 @@ create_target_key_pipe() {
     fi
     if [[ ! -d  "${TARGET_KEY_PIPE_TMP_DIRECTORY}" ]]; then
         mkdir -p "${TARGET_KEY_PIPE_TMP_DIRECTORY}" && \
+        chmod 700 "${TARGET_KEY_PIPE_TMP_DIRECTORY}" && \
         mkfifo "${TARGET_KEY_PIPE_TMP_DIRECTORY}/${TARGET_KEY_PIPENAME}"
     fi
 }

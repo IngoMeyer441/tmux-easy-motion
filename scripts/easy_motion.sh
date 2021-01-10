@@ -33,6 +33,7 @@ easy_motion_create_work_buffer_and_pipe() {
 easy_motion_setup() {
     local easy_motion_window_and_pane_ids
 
+    tmux copy-mode && \
     EASY_MOTION_CURSOR_POSITION="$(read_cursor_position)" && \
     EASY_MOTION_PANE_SIZE="$(get_current_pane_size)" && \
     EASY_MOTION_ORIGINAL_PANE_ID="$(get_current_pane_id)" && \
