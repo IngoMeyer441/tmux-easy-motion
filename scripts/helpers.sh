@@ -20,7 +20,7 @@ is_tmux_version_greater_or_equal() {
 
     version="$1"
     [[ -n "${version}" ]] || return
-    [[ "$(echo "$(tmux -V | cut -d" " -f2);${version}" | tr ";" "\n" | sort -g -t "." -k 1,1 -k 2,2 | head -1)" == "${version}" ]]
+    [[ "$(echo "$(tmux -V | sed 's/next-//g' | cut -d" " -f2);${version}" | tr ";" "\n" | sort -g -t "." -k 1,1 -k 2,2 | head -1)" == "${version}" ]]
 }
 
 display_message() {
