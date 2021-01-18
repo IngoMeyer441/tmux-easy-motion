@@ -5,12 +5,41 @@ SCRIPTS_DIR="${CURRENT_DIR}"
 # shellcheck source=./common_variables.sh
 source "${SCRIPTS_DIR}/common_variables.sh"
 
-get_target_key_pipe_tmp_directory() {
+ensure_target_key_pipe_exists() {
+    local server_pid session_id target_key_pipe_tmp_directory
+
+    server_pid="$1"
+    session_id="$2"
+
+    target_key_pipe_tmp_directory=$(get_target_key_pipe_tmp_directory "${server_pid}" "${session_id}")
+    if [[ ! -d  "${target_key_pipe_tmp_directory}" ]]; then
+        mkdir -p "${target_key_pipe_tmp_directory}" && \
+        chmod 700 "${target_key_pipe_tmp_directory}" && \
+        mkfifo "${target_key_pipe_tmp_directory}/${TARGET_KEY_PIPENAME}"
+    fi
+}
+
+get_target_key_pipe_parent_directory() {
     local server_pid
 
     server_pid="$1"
 
     echo "${TMPDIR}/tmux-easy-motion-target-key-pipe_$(id -un)_${server_pid}"
+}
+
+get_target_key_pipe_tmp_directory() {
+    local server_pid session_id parent_dir
+
+    server_pid="$1"
+    session_id="$2"
+
+    if [[ "${session_id}" =~ \$(.*) ]]; then
+        session_id="${BASH_REMATCH[1]}"
+    fi
+
+    parent_dir=$(get_target_key_pipe_parent_directory "${server_pid}")
+
+    echo "${parent_dir}/${session_id}"
 }
 
 get_tmux_server_pid() {
@@ -58,35 +87,51 @@ get_tmux_option() {
     fi
 }
 
-capture_current_pane() {
-    local capture_filepath
+capture_pane() {
+    local session_id window_id pane_id capture_filepath
 
-    capture_filepath="$1"
+    session_id="$1"
+    window_id="$2"
+    pane_id="$3"
+    capture_filepath="$4"
 
-    tmux capture-pane -p > "${capture_filepath}"
+    tmux capture-pane -t "${session_id}:${window_id}.${pane_id}" -p > "${capture_filepath}"
 }
 
-get_current_pane_id() {
-    tmux list-panes -F "#{pane_id}:#{?pane_active,active,inactive}" | awk -F':' '$2 == "active" { print $1 }'
+get_pane_size() {
+    local session_id window_id pane_id
+
+    session_id="$1"
+    window_id="$2"
+    pane_id="$3"
+
+    tmux display-message -p -t "${session_id}:${window_id}.${pane_id}" -F "#{pane_width}:#{pane_height}"
 }
 
-get_current_pane_size() {
-    tmux list-panes -F "#{pane_width}:#{pane_height}:#{?pane_active,active,inactive}" | awk -F':' '$3 == "active" { printf "%d:%d\n", $1, $2 }'
+get_window_size() {
+    local session_id window_id
+
+    session_id="$1"
+    window_id="$2"
+
+    tmux display-message -p -t "${session_id}:${window_id}" "#{window_width}:#{window_height}"
 }
 
-get_current_window_size() {
-    tmux list-windows -F "#{window_width}:#{window_height}:#{?window_active,active,inactive}" | awk -F':' '$3 == "active" { printf "%d:%d\n", $1, $2 }'
+is_pane_zoomed() {
+    local session_id window_id pane_id
+
+    session_id="$1"
+    window_id="$2"
+    pane_id="$3"
+
+    [[ "$(tmux display-message -p -t "${session_id}:${window_id}.${pane_id}" -F "#{?window_zoomed_flag,zoomed,not_zoomed}")" == "zoomed" ]]
 }
 
-is_current_pane_zoomed() {
-    [[ "$(tmux list-panes -F "#{?window_zoomed_flag,zoomed,not_zoomed}:#{?pane_active,active,inactive}" | awk -F':' '$2 == "active" { print $1 }')" == "zoomed" ]]
-}
-
-swap_current_pane() {
+swap_pane() {
     local target_pane_id source_pane_id
 
     target_pane_id="$1"
-    source_pane_id=$(get_current_pane_id)
+    source_pane_id="$2"
 
     tmux swap-pane -s "${source_pane_id}" -t "${target_pane_id}"
 }
@@ -100,7 +145,8 @@ zoom_pane() {
 
 # Based on https://github.com/Morantron/tmux-fingers/blob/1.0.1/scripts/tmux-fingers.sh#L10
 create_empty_swap_pane() {
-    local name swap_window_and_pane_ids swap_window_id swap_pane_id
+    local name session_id window_id pane_id
+    local swap_window_and_pane_ids swap_window_id swap_pane_id
     local current_pane_width current_pane_height
     local current_window_width current_window_height
     local split_width split_height
@@ -122,12 +168,15 @@ create_empty_swap_pane() {
         echo "${set_env} ${init_bash}"
     }
 
-    name="$1"
+    session_id="$1"
+    window_id="$2"
+    pane_id="$3"
+    name="$4"
 
-    swap_window_and_pane_ids="$(tmux new-window -F "#{window_id}:#{pane_id}" -P -d -n "[${name}]" "$(init_pane_cmd)")"
+    swap_window_and_pane_ids="$(tmux new-window -t "${session_id}" -F "#{window_id}:#{pane_id}" -P -d -n "[${name}]" "$(init_pane_cmd)")"
     IFS=':' read -r swap_window_id swap_pane_id <<< "${swap_window_and_pane_ids}"
-    IFS=':' read -r current_pane_width current_pane_height <<< "$(get_current_pane_size)"
-    IFS=':' read -r current_window_width current_window_height <<< "$(get_current_window_size)"
+    IFS=':' read -r current_pane_width current_pane_height <<< "$(get_pane_size "${session_id}" "${window_id}" "${pane_id}")"
+    IFS=':' read -r current_window_width current_window_height <<< "$(get_window_size "${session_id}" "${window_id}")"
 
     split_width="$(( current_window_width - current_pane_width - 1 ))"
     split_height="$(( current_window_height - current_pane_height - 1 ))"
@@ -159,37 +208,53 @@ pane_exec() {
     tmux send-keys -t "${pane_id}" Enter
 }
 
-is_active_pane_in_copy_mode() {
-    [[ "$(tmux list-panes -F "#{?pane_in_mode,copy,nocopy}:#{?pane_active,active,inactive}" | awk -F':' '$2 == "active" { print $1 }')" == "copy" ]]
+is_pane_in_copy_mode() {
+    local session_id window_id pane_id
+
+    session_id="$1"
+    window_id="$2"
+    pane_id="$3"
+
+    [[ "$(tmux list-panes -t "${session_id}:${window_id}.${pane_id}" -F "#{?pane_in_mode,copy,nocopy}")" == "copy" ]]
 }
 
 read_cursor_position() {
+    local session_id window_id pane_id
+
+    session_id="$1"
+    window_id="$2"
+    pane_id="$3"
+
     local cursor_type
 
-    if is_active_pane_in_copy_mode; then
+    if is_pane_in_copy_mode "${session_id}" "${window_id}" "${pane_id}"; then
         cursor_type="copy_cursor"
     else
         cursor_type="cursor"
     fi
-    tmux list-panes -F "#{?pane_active,active,inactive}:#{${cursor_type}_y}:#{${cursor_type}_x}" | \
-        awk -F':' '$1 == "active" { printf "%d:%d\n", $2, $3 }'
+    tmux display-message -t "${session_id}:${window_id}.${pane_id}" -p -F "#{${cursor_type}_y}:#{${cursor_type}_x}"
 }
 
 set_cursor_position() {
-    local row_col row col old_row old_col rel_row
+    local session_id window_id pane_id row_col
+    local row col old_row old_col rel_row
 
-    row_col="$1"
+    session_id="$1"
+    window_id="$2"
+    pane_id="$3"
+    row_col="$4"
+
     IFS=':' read -r row col <<< "${row_col}"
-    IFS=':' read -r old_row old_col <<< "$(read_cursor_position)"
+    IFS=':' read -r old_row old_col <<< "$(read_cursor_position "${session_id}" "${window_id}" "${pane_id}")"
     rel_row="$(( row - old_row ))"
-    tmux copy-mode
+    tmux copy-mode -t "${session_id}:${window_id}.${pane_id}"
     if (( rel_row < 0 )); then
-        tmux send-keys -X -N "$(( -rel_row ))" cursor-up
+        tmux send-keys -t "${session_id}:${window_id}.${pane_id}" -X -N "$(( -rel_row ))" cursor-up
     elif (( rel_row > 0 )); then
-        tmux send-keys -X -N "$(( rel_row ))" cursor-down
+        tmux send-keys -t "${session_id}:${window_id}.${pane_id}" -X -N "$(( rel_row ))" cursor-down
     fi
     # Relative colum positioning does not work since tmux can change the column
     # while moving the cursor up or down (like in vim).
-    tmux send-keys -X start-of-line
-    tmux send-keys -X -N "$(( col ))" cursor-right
+    tmux send-keys -t "${session_id}:${window_id}.${pane_id}" -X start-of-line
+    tmux send-keys -t "${session_id}:${window_id}.${pane_id}" -X -N "$(( col ))" cursor-right
 }
