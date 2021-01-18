@@ -1,4 +1,21 @@
 # shellcheck shell=bash
+CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPTS_DIR="${CURRENT_DIR}"
+
+# shellcheck source=./common_variables.sh
+source "${SCRIPTS_DIR}/common_variables.sh"
+
+get_target_key_pipe_tmp_directory() {
+    local server_pid
+
+    server_pid="$1"
+
+    echo "${TMPDIR}/tmux-easy-motion-target-key-pipe_$(id -un)_${server_pid}"
+}
+
+get_tmux_server_pid() {
+    [[ "${TMUX}" =~ .*,(.*),.* ]] && echo "${BASH_REMATCH[1]}"
+}
 
 escape_double_quotes() {
     local unescaped_string
