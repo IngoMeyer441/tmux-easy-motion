@@ -5,41 +5,51 @@ SCRIPTS_DIR="${CURRENT_DIR}"
 
 # shellcheck source=./common_variables.sh
 source "${SCRIPTS_DIR}/common_variables.sh"
-
+# shellcheck source=./helpers.sh
+source "${SCRIPTS_DIR}/helpers.sh"
 
 create_target_key_pipe() {
-    local recreate
+    local server_pid recreate target_key_pipe_tmp_directory
 
-    if [[ "$1" == "recreate" ]]; then
+    server_pid="$1"
+    if [[ "$2" == "recreate" ]]; then
         recreate=1
     else
         recreate=0
     fi
 
-    [[ -n "${TARGET_KEY_PIPE_TMP_DIRECTORY}" ]] || return
+    target_key_pipe_tmp_directory=$(get_target_key_pipe_tmp_directory "${server_pid}")
+
+    [[ -n "${target_key_pipe_tmp_directory}" ]] || return
     if (( recreate )); then
-        rm -rf "${TARGET_KEY_PIPE_TMP_DIRECTORY}" || return
+        rm -rf "${target_key_pipe_tmp_directory}" || return
     fi
-    if [[ ! -d  "${TARGET_KEY_PIPE_TMP_DIRECTORY}" ]]; then
-        mkdir -p "${TARGET_KEY_PIPE_TMP_DIRECTORY}" && \
-        chmod 700 "${TARGET_KEY_PIPE_TMP_DIRECTORY}" && \
-        mkfifo "${TARGET_KEY_PIPE_TMP_DIRECTORY}/${TARGET_KEY_PIPENAME}"
+    if [[ ! -d  "${target_key_pipe_tmp_directory}" ]]; then
+        mkdir -p "${target_key_pipe_tmp_directory}" && \
+        chmod 700 "${target_key_pipe_tmp_directory}" && \
+        mkfifo "${target_key_pipe_tmp_directory}/${TARGET_KEY_PIPENAME}"
     fi
 }
 
 write_target_key() {
-    local target_key
+    local server_pid target_key target_key_pipe_tmp_directory
 
-    target_key="$1"
-    echo "${target_key}" >> "${TARGET_KEY_PIPE_TMP_DIRECTORY}/${TARGET_KEY_PIPENAME}"
+    server_pid="$1"
+    target_key="$2"
+    target_key_pipe_tmp_directory=$(get_target_key_pipe_tmp_directory "${server_pid}")
+
+    echo "${target_key}" >> "${target_key_pipe_tmp_directory}/${TARGET_KEY_PIPENAME}"
 }
 
 main() {
-    # The script can be called without arguments to only (re)create the target pipe
-    if (( $# == 0 )); then
-        create_target_key_pipe recreate
+    local server_pid
+    server_pid="$1"
+
+    # The script can be called without a key to only (re)create the target pipe
+    if (( $# == 1 )); then
+        create_target_key_pipe "${server_pid}" recreate
     else
-        create_target_key_pipe && \
+        create_target_key_pipe "${server_pid}" && \
         write_target_key "$@"
     fi
 }

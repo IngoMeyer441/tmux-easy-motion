@@ -70,14 +70,17 @@ easy_motion_toggle_pane() {
 }
 
 easy_motion() {
-    local motion motion_argument ready_command jump_command jump_cursor_position
+    local server_pid motion motion_argument target_key_pipe_tmp_directory ready_command jump_command
+    local jump_cursor_position
 
-    motion="$1"
-    motion_argument="$2"
+    server_pid="$1"
+    motion="$2"
+    motion_argument="$3"
     # Undo escaping of motion arguments
     if [[ "${motion_argument:0:1}" == "\\" ]]; then
         motion_argument="${motion_argument:1}"
     fi
+    target_key_pipe_tmp_directory=$(get_target_key_pipe_tmp_directory "${server_pid}")
     pane_exec "${EASY_MOTION_PANE_ID}" \
               "${SCRIPTS_DIR}/easy_motion.py" \
               "${EASY_MOTION_DIM_STYLE}" \
@@ -91,7 +94,7 @@ easy_motion() {
               "${EASY_MOTION_PANE_SIZE}" \
               "${CAPTURE_TMP_DIRECTORY}/${CAPTURE_PANE_FILENAME}" \
               "${CAPTURE_TMP_DIRECTORY}/${JUMP_COMMAND_PIPENAME}" \
-              "${TARGET_KEY_PIPE_TMP_DIRECTORY}/${TARGET_KEY_PIPENAME}" && \
+              "${target_key_pipe_tmp_directory}/${TARGET_KEY_PIPENAME}" && \
 
     {
         read -r ready_command && \
