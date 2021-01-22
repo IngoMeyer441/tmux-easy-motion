@@ -18,6 +18,23 @@ ensure_target_key_pipe_exists() {
     fi
 }
 
+install_target_key_pipe_cleanup_hook() {
+    local server_pid
+
+    server_pid="$1"
+
+    # Check if the hook is already installed
+    if tmux show-hooks -g | grep -q '^session-closed.*tmux-easy-motion'; then
+        return 0
+    fi
+
+    tmux set-hook -ga "session-closed" \
+        "run-shell 'session_id=\"\#{hook_session}\"; \
+                    rm -rf \"$(get_target_key_pipe_parent_directory "${server_pid}")/\${session_id:1}\"; \
+                    rmdir \"$(get_target_key_pipe_parent_directory "${server_pid}")\" 2>/dev/null; \
+                    true'"  # Ignore error codes from `rmdir` if the directory is not empty
+}
+
 get_target_key_pipe_parent_directory() {
     local server_pid
 
