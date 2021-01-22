@@ -29,12 +29,12 @@ setup_bindings() {
     tmux bind-key "${EASY_MOTION_KEY}" switch-client -T easy-motion
     tmux bind-key -T copy-mode-vi "${EASY_MOTION_KEY}" switch-client -T easy-motion
     while read -N1 key; do
-        tmux bind-key -T easy-motion "${key}" run-shell -b "${SCRIPTS_DIR}/easy_motion.sh '${server_pid}' '\#{session_id}' '#{window_id}' '#{pane_id}' '${key}'"
+        tmux bind-key -T easy-motion "${key}" run-shell -b "${SCRIPTS_DIR}/easy_motion.sh '${server_pid}' '#{session_id}' '#{window_id}' '#{pane_id}' '${key}'"
     done < <(echo -n "${EASY_MOTION_VALID_SINGLE_MOTION_KEYS}")
     tmux bind-key -T easy-motion "g" switch-client -T easy-motion-g
     tmux bind-key -T easy-motion "Escape" switch-client -T root
     while read -N1 key; do
-        tmux bind-key -T easy-motion-g "${key}" run-shell -b "${SCRIPTS_DIR}/easy_motion.sh '${server_pid}' '\#{session_id}' '#{window_id}' '#{pane_id}' 'g${key}'"
+        tmux bind-key -T easy-motion-g "${key}" run-shell -b "${SCRIPTS_DIR}/easy_motion.sh '${server_pid}' '#{session_id}' '#{window_id}' '#{pane_id}' 'g${key}'"
     done < <(echo -n "${EASY_MOTION_VALID_SINGLE_MOTION_KEYS_G}")
     tmux bind-key -T easy-motion-g "Escape" switch-client -T root
     while read -N1 key; do
