@@ -82,7 +82,7 @@ easy_motion_toggle_pane() {
 }
 
 easy_motion() {
-    local server_pid session_id window_id pane_id motion motion_argument 
+    local server_pid session_id window_id pane_id motion motion_argument
     local ready_command jump_command jump_cursor_position
     local target_key_pipe_tmp_directory
 

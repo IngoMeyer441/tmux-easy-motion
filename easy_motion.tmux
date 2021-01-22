@@ -77,6 +77,7 @@ main() {
 
     check_version && \
     read_options && \
+    install_target_key_pipe_cleanup_hook "${server_pid}" && \
     setup_bindings "${server_pid}"
 }
 
