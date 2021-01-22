@@ -88,13 +88,34 @@ get_tmux_option() {
 
 capture_pane() {
     local session_id window_id pane_id capture_filepath
+    local current_pane_scroll_start current_pane_scroll_end
 
     session_id="$1"
     window_id="$2"
     pane_id="$3"
     capture_filepath="$4"
 
-    tmux capture-pane -t "${session_id}:${window_id}.${pane_id}" -p > "${capture_filepath}"
+    IFS=':' read -r current_pane_scroll_start current_pane_scroll_end <<< \
+        "$(get_pane_scroll_range "${session_id}" "${window_id}" "${pane_id}")"
+    tmux capture-pane -t "${session_id}:${window_id}.${pane_id}" \
+                      -p \
+                      -S "${current_pane_scroll_start}" \
+                      -E "${current_pane_scroll_end}" \
+                      > "${capture_filepath}"
+}
+
+get_pane_scroll_range() {
+    local session_id window_id pane_id
+    local current_pane_scroll_position current_pane_height
+
+    session_id="$1"
+    window_id="$2"
+    pane_id="$3"
+
+    IFS=':' read -r current_pane_scroll_position current_pane_height <<< \
+        "$(tmux display-message -p -t "${session_id}:${window_id}.${pane_id}" -F "#{scroll_position}:#{pane_height}")"
+
+    echo "$(( - current_pane_scroll_position )):$(( - current_pane_scroll_position + current_pane_height - 1 ))"
 }
 
 get_pane_size() {
