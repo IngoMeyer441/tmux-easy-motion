@@ -15,6 +15,12 @@ source "${SCRIPTS_DIR}/options.sh"
 
 
 easy_motion_create_work_buffer_and_pipe() {
+    local session_id window_id pane_id
+
+    session_id="$1"
+    window_id="$2"
+    pane_id="$3"
+
     if [[ -z "${CAPTURE_TMP_DIRECTORY}" ]]; then
         CAPTURE_TMP_DIRECTORY="$(mktemp -d)" || return
 
@@ -25,21 +31,27 @@ easy_motion_create_work_buffer_and_pipe() {
         }
         trap _capture_tmp_directory_cleanup EXIT
     fi
-    capture_current_pane "${CAPTURE_TMP_DIRECTORY}/${CAPTURE_PANE_FILENAME}" && \
+    capture_pane "${session_id}" "${window_id}" "${pane_id}" "${CAPTURE_TMP_DIRECTORY}/${CAPTURE_PANE_FILENAME}" && \
     chmod 400 "${CAPTURE_TMP_DIRECTORY}/${CAPTURE_PANE_FILENAME}" && \
     mkfifo "${CAPTURE_TMP_DIRECTORY}/${JUMP_COMMAND_PIPENAME}"
 }
 
 easy_motion_setup() {
-    local easy_motion_window_and_pane_ids
+    local session_id window_id pane_id easy_motion_window_and_pane_ids
 
-    tmux copy-mode && \
-    EASY_MOTION_CURSOR_POSITION="$(read_cursor_position)" && \
-    EASY_MOTION_PANE_SIZE="$(get_current_pane_size)" && \
-    EASY_MOTION_ORIGINAL_PANE_ID="$(get_current_pane_id)" && \
-    EASY_MOTION_IS_PANE_ZOOMED="$(is_current_pane_zoomed && echo 1 || echo 0)" && \
-    easy_motion_create_work_buffer_and_pipe && \
-    easy_motion_window_and_pane_ids="$(create_empty_swap_pane "easy-motion")"
+    session_id="$1"
+    window_id="$2"
+    pane_id="$3"
+
+    tmux copy-mode -t "${session_id}:${window_id}.${pane_id}" && \
+    EASY_MOTION_CURSOR_POSITION="$(read_cursor_position "${session_id}" "${window_id}" "${pane_id}")" && \
+    EASY_MOTION_PANE_SIZE="$(get_pane_size "${session_id}" "${window_id}" "${pane_id}")" && \
+    EASY_MOTION_ORIGINAL_SESSION_ID="${session_id}" && \
+    EASY_MOTION_ORIGINAL_WINDOW_ID="${window_id}" && \
+    EASY_MOTION_ORIGINAL_PANE_ID="${pane_id}" && \
+    EASY_MOTION_IS_PANE_ZOOMED="$(is_pane_zoomed "${session_id}" "${window_id}" "${pane_id}" && echo 1 || echo 0)" && \
+    easy_motion_create_work_buffer_and_pipe "${session_id}" "${window_id}" "${pane_id}" && \
+    easy_motion_window_and_pane_ids="$(create_empty_swap_pane "${session_id}" "${window_id}" "${pane_id}" "easy-motion")"
     EASY_MOTION_WINDOW_ID=$(cut -d: -f1 <<< "${easy_motion_window_and_pane_ids}") && \
     EASY_MOTION_PANE_ID=$(cut -d: -f2 <<< "${easy_motion_window_and_pane_ids}")
     EASY_MOTION_PANE_ACTIVE=0
@@ -50,7 +62,7 @@ easy_motion_toggle_pane() {
         if [[ -n "${EASY_MOTION_ORIGINAL_PANE_ID}" ]]; then
             tmux set-window-option key-table root && \
             tmux switch-client -T root && \
-            swap_current_pane "${EASY_MOTION_ORIGINAL_PANE_ID}" && \
+            swap_pane "${EASY_MOTION_ORIGINAL_PANE_ID}" "${EASY_MOTION_PANE_ID}" && \
             if (( EASY_MOTION_IS_PANE_ZOOMED )); then
                 zoom_pane "${EASY_MOTION_ORIGINAL_PANE_ID}"
             fi
@@ -60,7 +72,7 @@ easy_motion_toggle_pane() {
         if [[ -n "${EASY_MOTION_PANE_ID}" ]]; then
             tmux set-window-option key-table easy-motion-target && \
             tmux switch-client -T easy-motion-target && \
-            swap_current_pane "${EASY_MOTION_PANE_ID}" && \
+            swap_pane "${EASY_MOTION_PANE_ID}" "${EASY_MOTION_ORIGINAL_PANE_ID}" && \
             if (( EASY_MOTION_IS_PANE_ZOOMED )); then
                 zoom_pane "${EASY_MOTION_PANE_ID}"
             fi
@@ -70,14 +82,23 @@ easy_motion_toggle_pane() {
 }
 
 easy_motion() {
-    local motion motion_argument ready_command jump_command jump_cursor_position
+    local server_pid session_id window_id pane_id motion motion_argument 
+    local ready_command jump_command jump_cursor_position
+    local target_key_pipe_tmp_directory
 
-    motion="$1"
-    motion_argument="$2"
+    server_pid="$1"
+    session_id="$2"
+    window_id="$3"
+    pane_id="$4"
+    motion="$5"
+    motion_argument="$6"
+
     # Undo escaping of motion arguments
     if [[ "${motion_argument:0:1}" == "\\" ]]; then
         motion_argument="${motion_argument:1}"
     fi
+    ensure_target_key_pipe_exists "${server_pid}" "${session_id}"
+    target_key_pipe_tmp_directory=$(get_target_key_pipe_tmp_directory "${server_pid}" "${session_id}")
     pane_exec "${EASY_MOTION_PANE_ID}" \
               "${SCRIPTS_DIR}/easy_motion.py" \
               "${EASY_MOTION_DIM_STYLE}" \
@@ -91,8 +112,7 @@ easy_motion() {
               "${EASY_MOTION_PANE_SIZE}" \
               "${CAPTURE_TMP_DIRECTORY}/${CAPTURE_PANE_FILENAME}" \
               "${CAPTURE_TMP_DIRECTORY}/${JUMP_COMMAND_PIPENAME}" \
-              "${TARGET_KEY_PIPE_TMP_DIRECTORY}/${TARGET_KEY_PIPENAME}" && \
-
+              "${target_key_pipe_tmp_directory}/${TARGET_KEY_PIPENAME}" && \
     {
         read -r ready_command && \
         if [[ "${ready_command}" == "ready" ]]; then
@@ -106,7 +126,7 @@ easy_motion() {
         if [[ "${ready_command}" != "single-target" ]]; then
             easy_motion_toggle_pane || return
         fi
-        set_cursor_position "${jump_cursor_position}"
+        set_cursor_position "${session_id}" "${window_id}" "${pane_id}" "${jump_cursor_position}"
     } < "${CAPTURE_TMP_DIRECTORY}/${JUMP_COMMAND_PIPENAME}"
 }
 
@@ -120,8 +140,13 @@ easy_motion_cleanup() {
 }
 
 main() {
+    local session_id window_id pane_id
+    session_id="$2"
+    window_id="$3"
+    pane_id="$4"
+
     read_options && \
-    easy_motion_setup && \
+    easy_motion_setup "${session_id}" "${window_id}" "${pane_id}" && \
     easy_motion "$@"
     easy_motion_cleanup
 }
