@@ -13,8 +13,7 @@ ensure_target_key_pipe_exists() {
 
     target_key_pipe_tmp_directory=$(get_target_key_pipe_tmp_directory "${server_pid}" "${session_id}")
     if [[ ! -d  "${target_key_pipe_tmp_directory}" ]]; then
-        mkdir -p "${target_key_pipe_tmp_directory}" && \
-        chmod 700 "${target_key_pipe_tmp_directory}" && \
+        mkdir -m 700 -p "${target_key_pipe_tmp_directory}" && \
         mkfifo "${target_key_pipe_tmp_directory}/${TARGET_KEY_PIPENAME}"
     fi
 }
