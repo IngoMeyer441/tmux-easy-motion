@@ -97,8 +97,8 @@ easy_motion() {
     if [[ "${motion_argument:0:1}" == "\\" ]]; then
         motion_argument="${motion_argument:1}"
     fi
-    ensure_target_key_pipe_exists "${server_pid}" "${session_id}"
-    target_key_pipe_tmp_directory=$(get_target_key_pipe_tmp_directory "${server_pid}" "${session_id}")
+    ensure_target_key_pipe_exists "${server_pid}" "${session_id}" && \
+    target_key_pipe_tmp_directory=$(get_target_key_pipe_tmp_directory "${server_pid}" "${session_id}") && \
     pane_exec "${EASY_MOTION_PANE_ID}" \
               "${SCRIPTS_DIR}/easy_motion.py" \
               "${EASY_MOTION_DIM_STYLE}" \
