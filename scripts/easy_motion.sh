@@ -60,8 +60,8 @@ easy_motion_setup() {
 easy_motion_toggle_pane() {
     if (( EASY_MOTION_PANE_ACTIVE )); then
         if [[ -n "${EASY_MOTION_ORIGINAL_PANE_ID}" ]]; then
-            tmux set-window-option key-table root && \
-            tmux switch-client -T root && \
+            tmux set-window-option -t "${EASY_MOTION_ORIGINAL_PANE_ID}" key-table root && \
+            tmux switch-client -t "${EASY_MOTION_ORIGINAL_PANE_ID}" -T root && \
             swap_pane "${EASY_MOTION_ORIGINAL_PANE_ID}" "${EASY_MOTION_PANE_ID}" && \
             if (( EASY_MOTION_IS_PANE_ZOOMED )); then
                 zoom_pane "${EASY_MOTION_ORIGINAL_PANE_ID}"
@@ -70,8 +70,8 @@ easy_motion_toggle_pane() {
         fi
     else
         if [[ -n "${EASY_MOTION_PANE_ID}" ]]; then
-            tmux set-window-option key-table easy-motion-target && \
-            tmux switch-client -T easy-motion-target && \
+            tmux set-window-option -t "${EASY_MOTION_PANE_ID}" key-table easy-motion-target && \
+            tmux switch-client -t "${EASY_MOTION_PANE_ID}" -T easy-motion-target && \
             swap_pane "${EASY_MOTION_PANE_ID}" "${EASY_MOTION_ORIGINAL_PANE_ID}" && \
             if (( EASY_MOTION_IS_PANE_ZOOMED )); then
                 zoom_pane "${EASY_MOTION_PANE_ID}"
