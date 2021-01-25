@@ -11,9 +11,8 @@ ensure_target_key_pipe_exists() {
     server_pid="$1"
     session_id="$2"
 
-    target_key_pipe_tmp_directory=$(get_target_key_pipe_tmp_directory "${server_pid}" "${session_id}")
-    if [[ ! -d  "${target_key_pipe_tmp_directory}" ]]; then
-        mkdir -m 700 -p "${target_key_pipe_tmp_directory}" && \
+    target_key_pipe_tmp_directory=$(get_target_key_pipe_tmp_directory "${server_pid}" "${session_id}" create) && \
+    if [[ ! -p "${target_key_pipe_tmp_directory}/${TARGET_KEY_PIPENAME}" ]]; then
         mkfifo "${target_key_pipe_tmp_directory}/${TARGET_KEY_PIPENAME}"
     fi
 }
@@ -44,18 +43,32 @@ get_target_key_pipe_parent_directory() {
 }
 
 get_target_key_pipe_tmp_directory() {
-    local server_pid session_id parent_dir
+    local server_pid session_id create parent_dir target_key_pipe_tmp_directory
 
     server_pid="$1"
     session_id="$2"
-
     if [[ "${session_id}" =~ \$(.*) ]]; then
         session_id="${BASH_REMATCH[1]}"
     fi
+    if [[ "$3" == "create" ]]; then
+        create=1
+    else
+        create=0
+    fi
 
     parent_dir=$(get_target_key_pipe_parent_directory "${server_pid}")
+    target_key_pipe_tmp_directory="${parent_dir}/${session_id}"
 
-    echo "${parent_dir}/${session_id}"
+    if (( create )); then
+        if [[ ! -d "${parent_dir}" ]]; then
+            mkdir -m 700 -p "${parent_dir}" || return
+        fi
+        if [[ ! -d "${target_key_pipe_tmp_directory}" ]]; then
+            mkdir -m 700 -p "${target_key_pipe_tmp_directory}" || return
+        fi
+    fi
+
+    echo "${target_key_pipe_tmp_directory}"
 }
 
 get_tmux_server_pid() {
