@@ -5,6 +5,66 @@ SCRIPTS_DIR="${CURRENT_DIR}"
 # shellcheck source=./common_variables.sh
 source "${SCRIPTS_DIR}/common_variables.sh"
 
+setup_single_key_binding() {
+    local server_pid key motion key_table
+
+    server_pid="$1"
+    key="$2"
+    motion="$3"
+
+    if [[ "${key:0:1}" != "g" ]]; then
+        key_table="easy-motion"
+    else
+        key_table="easy-motion-g"
+        key="${key:1}"
+    fi
+
+    [[ "${key}" != "" ]] || return
+
+    case "${key}" in
+        \;)
+            key="\\${key}"
+            ;;
+        *)
+            ;;
+    esac
+
+    tmux bind-key -T "${key_table}" "${key}" run-shell -b \
+        "${SCRIPTS_DIR}/easy_motion.sh '${server_pid}' '#{session_id}' '#{window_id}' '#{pane_id}' '${motion}'"
+}
+
+setup_single_key_binding_with_argument() {
+    local server_pid key motion key_table
+
+    server_pid="$1"
+    key="$2"
+    motion="$3"
+
+    if [[ "${key:0:1}" != "g" ]]; then
+        key_table="easy-motion"
+    else
+        key_table="easy-motion-g"
+        key="${key:1}"
+    fi
+
+    [[ "${key}" != "" ]] || return
+
+    case "${key}" in
+        \;)
+            key="\\${key}"
+            ;;
+        *)
+            ;;
+    esac
+
+    tmux source - <<-EOF
+		bind-key -T "${key_table}" "${key}" command-prompt -1 -p "character:" {
+		    set -g @tmp-easy-motion-argument "%%%"
+		    run-shell -b '${SCRIPTS_DIR}/easy_motion.sh "${server_pid}" "\#{session_id}" "#{window_id}" "#{pane_id}" "${motion}" "#{q:@tmp-easy-motion-argument}"'
+		}
+	EOF
+}
+
 ensure_target_key_pipe_exists() {
     local server_pid session_id target_key_pipe_tmp_directory
 

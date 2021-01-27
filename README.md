@@ -15,8 +15,21 @@ are already some other plugins with similar functionality:
 - [tmux-thumbs](https://github.com/fcsonline/tmux-thumbs): Alternative to tmux-fingers.
 
 However, none of the already-existing plugins implement other movements than seeking. Therefore, I started my own
-implementation which adds much more easy-motion movements. Currently, the following motions are supported: `b`, `B`,
-`w`, `W`, `e`, `E`, `ge`, `gE`, `j`, `J`, `k`, `K` `f`, `F`, `t`, `T`, `c` (camelCase).
+implementation which adds much more easy-motion movements. All standard vi motions (`b`, `B`,
+`w`, `W`, `e`, `E`, `ge`, `gE`, `j`, `k`, `f`, `F`, `t`, `T`) and these vim-easy-motion movements are supported:
+
+- `J` (`j` + move to end of line)
+- `K` (`k` + move to end of line)
+- `bd-w` (`bd-*` -> bidirectional motion)
+- `bd-W`
+- `bd-e`
+- `bd-E`
+- `bd-j`
+- `bd-J`
+- `bd-f`
+- `bd-t`
+- `bd-T`
+- `c` (target camelCase or underscore notations)
 
 Special thanks to the authors of the [tmux-fingers](https://github.com/Morantron/tmux-fingers) project. Reading their
 source code helped a lot to understand how an easy-motion plugin can be implemented for tmux.
@@ -89,6 +102,42 @@ The grouping algorithm works recursively, so grouping is repeated if necessary. 
 a small set of target keys was configured.
 
 ## Configuration
+
+### Key bindings
+
+By default, tmux-easy-motion creates default key bindings for all standard vim motions, `J`, `K` and `c`. If you would
+like to remove, change or add a single key bindings, change the corresponding option (see the list below).
+Alternatively, you can set `@easy-motion-default-key-bindings` to `off` (or `false`, `disabled`, `0`) and configure all
+easy-motion key binding options yourself.
+
+Available key binding options:
+
+- `@easy-motion-binding-b`
+- `@easy-motion-binding-B`
+- `@easy-motion-binding-ge`
+- `@easy-motion-binding-gE`
+- `@easy-motion-binding-e`
+- `@easy-motion-binding-E`
+- `@easy-motion-binding-w`
+- `@easy-motion-binding-W`
+- `@easy-motion-binding-j`
+- `@easy-motion-binding-J`
+- `@easy-motion-binding-k`
+- `@easy-motion-binding-K`
+- `@easy-motion-binding-f`
+- `@easy-motion-binding-F`
+- `@easy-motion-binding-t`
+- `@easy-motion-binding-T`
+- `@easy-motion-binding-bd-w`
+- `@easy-motion-binding-bd-W`
+- `@easy-motion-binding-bd-e`
+- `@easy-motion-binding-bd-E`
+- `@easy-motion-binding-bd-j`
+- `@easy-motion-binding-bd-J`
+- `@easy-motion-binding-bd-f`
+- `@easy-motion-binding-bd-t`
+- `@easy-motion-binding-bd-T`
+- `@easy-motion-binding-c`
 
 ### Target keys
 
