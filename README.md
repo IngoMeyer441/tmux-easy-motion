@@ -126,6 +126,17 @@ set -g @easy-motion-highlight-2-first-style "fg=#ffb400,bold"
 set -g @easy-motion-highlight-2-second-style "fg=#b98300,bold"
 ```
 
+### Verbose mode
+
+By setting
+
+```
+set -g @easy-motion-verbose "on"
+```
+
+tmux-easy-motion operates in verbose mode which displays messages when easy-motion is activated and a motion was
+selected.
+
 ## Other plugins
 
 If you like this plugin and use zsh, please also try my easy-motion port for zsh:

@@ -116,6 +116,23 @@ get_tmux_option() {
     fi
 }
 
+get_tmux_bool_option() {
+    local option default_value option_value
+
+    option="$1"
+    default_value="$2"
+
+    option_value="$(get_tmux_option "${option}" "${default_value}" | awk '{ print tolower($0) }')"
+    case "${option_value}" in
+        1|yes|on|enabled|activated)
+            echo "1"
+            ;;
+        *)
+            echo "0"
+            ;;
+    esac
+}
+
 capture_pane() {
     local session_id window_id pane_id capture_filepath
     local current_pane_scroll_start current_pane_scroll_end

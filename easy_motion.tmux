@@ -26,9 +26,23 @@ setup_bindings() {
 
     server_pid="$1"
 
-    tmux bind-key "${EASY_MOTION_KEY}" switch-client -T easy-motion
-    tmux bind-key -T copy-mode-vi "${EASY_MOTION_KEY}" switch-client -T easy-motion
-    while read -n1 key; do
+    if (( EASY_MOTION_VERBOSE )); then
+        tmux source - <<-EOF
+			bind-key "${EASY_MOTION_KEY}" {
+			    switch-client -T easy-motion
+			    display-message "tmux-easy-motion activated, please type a motion command."
+			}
+			bind-key -T copy-mode-vi "${EASY_MOTION_KEY}" {
+			    switch-client -T easy-motion
+			    display-message "tmux-easy-motion activated, please type a motion command."
+			}
+		EOF
+    else
+        tmux bind-key "${EASY_MOTION_KEY}" switch-client -T easy-motion
+        tmux bind-key -T copy-mode-vi "${EASY_MOTION_KEY}" switch-client -T easy-motion
+    fi
+
+    while read -N1 key; do
         tmux bind-key -T easy-motion "${key}" run-shell -b "${SCRIPTS_DIR}/easy_motion.sh '${server_pid}' '#{session_id}' '#{window_id}' '#{pane_id}' '${key}'"
     done < <(echo -n "${EASY_MOTION_VALID_SINGLE_MOTION_KEYS}")
     tmux bind-key -T easy-motion "g" switch-client -T easy-motion-g
