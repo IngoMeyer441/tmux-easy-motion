@@ -139,6 +139,18 @@ Available key binding options:
 - `@easy-motion-binding-bd-T`
 - `@easy-motion-binding-c`
 
+If you only want to use a single easy-motion movement, you can configure it as the default motion which is activated
+directly after pressing the easy-motion prefix key and save one key press (`@easy-motion-default-motion`).
+
+Example:
+
+```
+set -g @easy-motion-default-motion "bd-w"
+```
+
+This setting will cause the highlight all word beginnings (bidirectional) after pressing the configured easy-motion
+prefix key.
+
 ### Target keys
 
 The target keys can be configured with the `@easy-motion-target-keys` option. The default is taken from the
