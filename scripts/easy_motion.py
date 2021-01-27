@@ -42,13 +42,82 @@ except ImportError:
 if PY2:
     str = unicode
 
-VALID_MOTIONS = frozenset(("b", "B", "ge", "gE", "e", "E", "w", "W", "j", "J", "k", "K", "f", "F", "t", "T", "s", "c"))
-MOTIONS_WITH_ARGUMENT = frozenset(("f", "F", "t", "T", "s"))
-FORWARD_MOTIONS = frozenset(("e", "E", "w", "W", "j", "J", "f", "t", "s", "c"))
-BACKWARD_MOTIONS = frozenset(("b", "B", "ge", "gE", "k", "K", "F", "T", "s", "c"))
-LINEWISE_MOTIONS = frozenset(("j", "J", "k", "K"))
-VIOPP_INCREMENT_CURSOR_MOTIONS = frozenset(("e", "E", "ge", "gE", "f", "t"))
-VIOPP_INCREMENT_CURSOR_ON_FORWARD_MOTIONS = frozenset(("s"))
+VALID_MOTIONS = frozenset(
+    (
+        "b",
+        "B",
+        "ge",
+        "gE",
+        "e",
+        "E",
+        "w",
+        "W",
+        "j",
+        "J",  # end of line
+        "k",
+        "K",  # end of line
+        "f",
+        "F",
+        "t",
+        "T",
+        "bd-w",  # bd -> bidirectional
+        "bd-W",
+        "bd-e",
+        "bd-E",
+        "bd-j",
+        "bd-J",
+        "bd-f",
+        "bd-t",
+        "bd-T",
+        "c",  # camelCase or underscore notation
+    )
+)
+MOTIONS_WITH_ARGUMENT = frozenset(("f", "F", "t", "T", "bd-f", "bd-t", "bd-T"))
+FORWARD_MOTIONS = frozenset(
+    (
+        "e",
+        "E",
+        "w",
+        "W",
+        "j",
+        "J",
+        "f",
+        "t",
+        "bd-w",
+        "bd-W",
+        "bd-e",
+        "bd-E",
+        "bd-j",
+        "bd-J",
+        "bd-f",
+        "bd-t",
+        "bd-T",
+        "c",
+    )
+)
+BACKWARD_MOTIONS = frozenset(
+    (
+        "b",
+        "B",
+        "ge",
+        "gE",
+        "k",
+        "K",
+        "F",
+        "T",
+        "bd-w",
+        "bd-W",
+        "bd-e",
+        "bd-E",
+        "bd-j",
+        "bd-J",
+        "bd-f",
+        "bd-t",
+        "bd-T",
+        "c",
+    )
+)
+LINEWISE_MOTIONS = frozenset(("j", "J", "k", "K", "bd-j", "bd-J"))
 MOTION_TO_REGEX = {
     "b": r"\b(\w)",
     "B": r"(?:^|\s)(\S)",
@@ -57,7 +126,7 @@ MOTION_TO_REGEX = {
     "e": r"(\w)\b",
     "E": r"(\S)(?:\s|$)",
     "w": r"\b(\w)",
-    "W": r"\s(\S)",
+    "W": r"(?:^|\s)(\S)",
     "j": r"^(?:\s*)(\S)",
     "J": r"(\S)(?:\s*)$",
     "k": r"^(?:\s*)(\S)",
@@ -66,7 +135,15 @@ MOTION_TO_REGEX = {
     "F": r"({})",
     "t": r"(.){}",
     "T": r"{}(.)",
-    "s": r"({})",
+    "bd-w": r"\b(\w)",
+    "bd-W": r"(?:^|\s)(\S)",
+    "bd-e": r"(\w)\b",
+    "bd-E": r"(\S)(?:\s|$)",
+    "bd-j": r"^(?:\s*)(\S)",
+    "bd-J": r"(\S)(?:\s*)$",
+    "bd-f": r"({})",
+    "bd-t": r"(.){}",
+    "bd-T": r"{}(.)",
     "c": r"(?:_(\w))|(?:[a-z]([A-Z]))",
 }
 
