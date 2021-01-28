@@ -342,7 +342,7 @@ is_pane_in_copy_mode() {
     window_id="$2"
     pane_id="$3"
 
-    [[ "$(tmux list-panes -t "${session_id}:${window_id}.${pane_id}" -F "#{?pane_in_mode,copy,nocopy}")" == "copy" ]]
+    [[ "$(tmux display-message -p -t "${session_id}:${window_id}.${pane_id}" "#{?pane_in_mode,copy,nocopy}")" == "copy" ]]
 }
 
 read_cursor_position() {
