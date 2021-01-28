@@ -5,6 +5,31 @@ SCRIPTS_DIR="${CURRENT_DIR}"
 # shellcheck source=./common_variables.sh
 source "${SCRIPTS_DIR}/common_variables.sh"
 
+get_prefix_enabled_for_key_table() {
+    case "${key_table}" in
+        "prefix")
+            return $(( ! EASY_MOTION_PREFIX_ENABLED ))
+            ;;
+        "copy-mode-vi")
+            return $(( ! EASY_MOTION_COPY_MODE_PREFIX_ENABLED ))
+            ;;
+    esac
+}
+
+get_prefix_for_key_table() {
+    local key_table
+    key_table="$1"
+
+    case "${key_table}" in
+        "prefix")
+            echo "${EASY_MOTION_PREFIX}"
+            ;;
+        "copy-mode-vi")
+            echo "${EASY_MOTION_COPY_MODE_PREFIX}"
+            ;;
+    esac
+}
+
 setup_single_key_binding() {
     local server_pid key motion key_table
 

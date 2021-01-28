@@ -17,25 +17,35 @@ check_version() {
 }
 
 setup_bindings() {
-    local server_pid key_table key target_key tmux_key
+    local server_pid key_table key target_key tmux_key prefix_for_key_table
 
     server_pid="$1"
 
     if [[ -z "${EASY_MOTION_DEFAULT_MOTION}" ]]; then
         if (( EASY_MOTION_VERBOSE )); then
-            tmux source - <<-EOF
-				bind-key "${EASY_MOTION_PREFIX}" {
-				    switch-client -T easy-motion
-				    display-message "tmux-easy-motion activated, please type a motion command."
-				}
-				bind-key -T copy-mode-vi "${EASY_MOTION_PREFIX}" {
-				    switch-client -T easy-motion
-				    display-message "tmux-easy-motion activated, please type a motion command."
-				}
-			EOF
+            if (( EASY_MOTION_PREFIX_ENABLED )); then
+                tmux source - <<-EOF
+					bind-key "${EASY_MOTION_PREFIX}" {
+						switch-client -T easy-motion
+						display-message "tmux-easy-motion activated, please type a motion command."
+					}
+				EOF
+            fi
+            if (( EASY_MOTION_COPY_MODE_PREFIX_ENABLED )); then
+                tmux source - <<-EOF
+					bind-key -T copy-mode-vi "${EASY_MOTION_COPY_MODE_PREFIX}" {
+						switch-client -T easy-motion
+						display-message "tmux-easy-motion activated, please type a motion command."
+					}
+				EOF
+            fi
         else
-            tmux bind-key "${EASY_MOTION_PREFIX}" switch-client -T easy-motion
-            tmux bind-key -T copy-mode-vi "${EASY_MOTION_PREFIX}" switch-client -T easy-motion
+            if (( EASY_MOTION_PREFIX_ENABLED )); then
+                tmux bind-key "${EASY_MOTION_PREFIX}" switch-client -T easy-motion
+            fi
+            if (( EASY_MOTION_COPY_MODE_PREFIX_ENABLED )); then
+                tmux bind-key -T copy-mode-vi "${EASY_MOTION_COPY_MODE_PREFIX}" switch-client -T easy-motion
+            fi
         fi
 
         tmux bind-key -T easy-motion "g" switch-client -T easy-motion-g
@@ -72,16 +82,24 @@ setup_bindings() {
         case "${EASY_MOTION_DEFAULT_MOTION}" in
             b|B|ge|gE|e|E|w|W|j|J|k|K|bd-w|bd-W|bd-e|bd-E|bd-j|bd-J|c)
                 for key_table in "prefix" "copy-mode-vi"; do
-                    tmux bind-key -T "${key_table}" "${EASY_MOTION_PREFIX}" run-shell -b \
+                    if ! get_prefix_enabled_for_key_table "${key_table}"; then
+                        continue
+                    fi
+                    prefix_for_key_table=$(get_prefix_for_key_table "${key_table}")
+                    tmux bind-key -T "${key_table}" "${prefix_for_key_table}" run-shell -b \
                         "${SCRIPTS_DIR}/easy_motion.sh '${server_pid}' '#{session_id}' '#{window_id}' '#{pane_id}' '${EASY_MOTION_DEFAULT_MOTION}'"
                 done
                 ;;
             f|F|t|T|bd-f|bd-t|bd-T)
                 for key_table in "prefix" "copy-mode-vi"; do
-                    tmux bind-key -T "${key_table}" "${EASY_MOTION_PREFIX}" run-shell -b \
+                    if ! get_prefix_enabled_for_key_table "${key_table}"; then
+                        continue
+                    fi
+                    prefix_for_key_table=$(get_prefix_for_key_table "${key_table}")
+                    tmux bind-key -T "${key_table}" "${prefix_for_key_table}" run-shell -b \
                         "${SCRIPTS_DIR}/easy_motion.sh '${server_pid}' '#{session_id}' '#{window_id}' '#{pane_id}' '${EASY_MOTION_DEFAULT_MOTION}'"
                     tmux source - <<-EOF
-						bind-key -T "${key_table}" "${EASY_MOTION_PREFIX}" command-prompt -1 -p "character:" {
+						bind-key -T "${key_table}" "${prefix_for_key_table}" command-prompt -1 -p "character:" {
 						    set -g @tmp-easy-motion-argument "%%%"
 						    run-shell -b '${SCRIPTS_DIR}/easy_motion.sh "${server_pid}" "\#{session_id}" "#{window_id}" "#{pane_id}" "${EASY_MOTION_DEFAULT_MOTION}" "#{q:@tmp-easy-motion-argument}"'
 						}
