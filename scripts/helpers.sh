@@ -248,12 +248,35 @@ get_window_size() {
     tmux display-message -p -t "${window_id}" "#{window_width}:#{window_height}"
 }
 
+get_window_name() {
+    local window_id
+
+    window_id="$1"
+
+    tmux display-message -p -t "${window_id}" "#{window_name}"
+}
+
 is_pane_zoomed() {
     local pane_id
 
     pane_id="$1"
 
     (( $(tmux display-message -p -t "${pane_id}" "#{window_zoomed_flag}") ))
+}
+
+swap_window() {
+    local target_window_id source_window_id
+    local target_window_name source_window_name
+
+    target_window_id="$1"
+    source_window_id="$2"
+
+    target_window_name="$(get_window_name "${target_window_id}")"
+    source_window_name="$(get_window_name "${source_window_id}")"
+
+    tmux swap-window -s "${source_window_id}" -t "${target_window_id}" && \
+    tmux rename-window -t "${target_window_id}" "${source_window_name}" && \
+    tmux rename-window -t "${source_window_id}" "${target_window_name}"
 }
 
 swap_pane() {
@@ -265,16 +288,9 @@ swap_pane() {
     tmux swap-pane -s "${source_pane_id}" -t "${target_pane_id}"
 }
 
-zoom_pane() {
-    local pane_id
-
-    pane_id="$1"
-    tmux resize-pane -Z -t "${pane_id}"
-}
-
 # Based on https://github.com/Morantron/tmux-fingers/blob/1.0.1/scripts/tmux-fingers.sh#L10
 create_empty_swap_pane() {
-    local name session_id window_id pane_id
+    local session_id window_id pane_id name
     local swap_window_and_pane_ids swap_window_id swap_pane_id
     local current_pane_width current_pane_height
     local current_window_width current_window_height
@@ -304,8 +320,13 @@ create_empty_swap_pane() {
 
     swap_window_and_pane_ids="$(tmux new-window -t "${session_id}" -F "#{window_id}:#{pane_id}" -P -d -n "[${name}]" "$(init_pane_cmd)")"
     IFS=':' read -r swap_window_id swap_pane_id <<< "${swap_window_and_pane_ids}"
-    IFS=':' read -r current_pane_width current_pane_height <<< "$(get_pane_size "${pane_id}")"
     IFS=':' read -r current_window_width current_window_height <<< "$(get_window_size "${window_id}")"
+    if is_pane_zoomed "${pane_id}"; then
+        current_pane_width="${current_window_width}"
+        current_pane_height="${current_window_height}"
+    else
+        IFS=':' read -r current_pane_width current_pane_height <<< "$(get_pane_size "${pane_id}")"
+    fi
 
     split_width="$(( current_window_width - current_pane_width - 1 ))"
     split_height="$(( current_window_height - current_pane_height - 1 ))"
