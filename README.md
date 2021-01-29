@@ -71,6 +71,8 @@ If you are using a quite recent Linux distribution or macOS, an appropriate Pyth
    bind-key -T copy-mode-vi v send-keys -X begin-selection
    ```
 
+   You can also configure another key binding for copy mode by setting `@easy-motion-copy-mode-prefix`.
+
 ### Manual
 
 1. Clone this repository and add
@@ -104,6 +106,12 @@ a small set of target keys was configured.
 ## Configuration
 
 ### Key bindings
+
+You can set a prefix key for tmux-easy-motion with the `@easy-motion-prefix` option. It will be bound on the prefix and
+the copy-mode-vi key table. If you don't want to use the same prefix key for both modes, you can set another key binding
+for copy mode with the `@easy-motion-copy-mode-prefix` option or you can disable the key bindings by setting
+`@easy-motion-prefix-enabled` and/or `@easy-motion-copy-mode-prefix-enabled` to `false` (or `no`, `off`, `disabled`,
+`deactivated`, `0`).
 
 By default, tmux-easy-motion creates default key bindings for all standard vim motions, `J`, `K` and `c`. If you would
 like to remove, change or add a single key bindings, change the corresponding option (see the list below).
