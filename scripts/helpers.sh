@@ -227,7 +227,7 @@ get_pane_scroll_range() {
     pane_id="$1"
 
     IFS=':' read -r current_pane_scroll_position current_pane_height <<< \
-        "$(tmux display-message -p -t "${pane_id}" -F "#{scroll_position}:#{pane_height}")"
+        "$(tmux display-message -p -t "${pane_id}" "#{scroll_position}:#{pane_height}")"
 
     echo "$(( - current_pane_scroll_position )):$(( - current_pane_scroll_position + current_pane_height - 1 ))"
 }
@@ -237,7 +237,7 @@ get_pane_size() {
 
     pane_id="$1"
 
-    tmux display-message -p -t "${pane_id}" -F "#{pane_width}:#{pane_height}"
+    tmux display-message -p -t "${pane_id}" "#{pane_width}:#{pane_height}"
 }
 
 get_window_size() {
@@ -253,7 +253,7 @@ is_pane_zoomed() {
 
     pane_id="$1"
 
-    [[ "$(tmux display-message -p -t "${pane_id}" -F "#{?window_zoomed_flag,zoomed,not_zoomed}")" == "zoomed" ]]
+    (( $(tmux display-message -p -t "${pane_id}" "#{window_zoomed_flag}") ))
 }
 
 swap_pane() {
@@ -342,7 +342,7 @@ is_pane_in_copy_mode() {
 
     pane_id="$1"
 
-    [[ "$(tmux display-message -p -t "${pane_id}" "#{?pane_in_mode,copy,nocopy}")" == "copy" ]]
+    (( $(tmux display-message -p -t "${pane_id}" "#{pane_in_mode}") ))
 }
 
 read_cursor_position() {
@@ -357,7 +357,7 @@ read_cursor_position() {
     else
         cursor_type="cursor"
     fi
-    tmux display-message -t "${pane_id}" -p -F "#{${cursor_type}_y}:#{${cursor_type}_x}"
+    tmux display-message -p -t "${pane_id}" "#{${cursor_type}_y}:#{${cursor_type}_x}"
 }
 
 set_cursor_position() {
