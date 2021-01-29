@@ -195,7 +195,7 @@ assign_tmux_bool_option() {
 
     assign_tmux_option "bool_option_value" "${option}" "${default_value}" "ignore_case"
     case "${bool_option_value}" in
-        1|yes|on|enabled|activated)
+        1|activated|enabled|on|true|yes)
             eval "${variable}='1'"
             ;;
         *)

@@ -107,8 +107,8 @@ a small set of target keys was configured.
 
 By default, tmux-easy-motion creates default key bindings for all standard vim motions, `J`, `K` and `c`. If you would
 like to remove, change or add a single key bindings, change the corresponding option (see the list below).
-Alternatively, you can set `@easy-motion-default-key-bindings` to `off` (or `false`, `disabled`, `0`) and configure all
-easy-motion key binding options yourself.
+Alternatively, you can set `@easy-motion-default-key-bindings` to `false` (or `off`, `disabled`, `no`, `deactivated`,
+`0`) and configure all easy-motion key binding options yourself.
 
 Available key binding options:
 
@@ -192,7 +192,7 @@ set -g @easy-motion-highlight-2-second-style "fg=#b98300,bold"
 By setting
 
 ```
-set -g @easy-motion-verbose "on"
+set -g @easy-motion-verbose "true"
 ```
 
 tmux-easy-motion operates in verbose mode which displays messages when easy-motion is activated and a motion was
