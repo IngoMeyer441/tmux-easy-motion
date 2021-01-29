@@ -162,33 +162,44 @@ display_message() {
     tmux display-message "$1"
 }
 
-get_tmux_option() {
-    local option default_value option_value
+assign_tmux_option() {
+    local variable option default_value option_value ignore_case
 
-    option="$1"
-    default_value="$2"
-
-    option_value="$(tmux show-option -gqv "${option}")"
-    if [[ -z "${option_value}" ]]; then
-        echo "${default_value}"
+    variable="$1"
+    option="$2"
+    default_value="$3"
+    if [[ "$4" == "ignore_case" ]]; then
+        ignore_case=1
     else
-        echo "${option_value}"
+        ignore_case=0
+    fi
+
+    if (( ignore_case )); then
+        option_value="$(tmux show-option -gqv "${option}" | awk '{ print tolower($0) }')"
+    else
+        option_value="$(tmux show-option -gqv "${option}")"
+    fi
+    if [[ -z "${option_value}" ]]; then
+        eval "${variable}=\${default_value}"
+    else
+        eval "${variable}=\${option_value}"
     fi
 }
 
-get_tmux_bool_option() {
-    local option default_value option_value
+assign_tmux_bool_option() {
+    local variable option default_value bool_option_value
 
-    option="$1"
-    default_value="$2"
+    variable="$1"
+    option="$2"
+    default_value="$3"
 
-    option_value="$(get_tmux_option "${option}" "${default_value}" | awk '{ print tolower($0) }')"
-    case "${option_value}" in
+    assign_tmux_option "bool_option_value" "${option}" "${default_value}" "ignore_case"
+    case "${bool_option_value}" in
         1|yes|on|enabled|activated)
-            echo "1"
+            eval "${variable}='1'"
             ;;
         *)
-            echo "0"
+            eval "${variable}='0'"
             ;;
     esac
 }
