@@ -91,76 +91,204 @@ EASY_MOTION_BINDING_C_OPTION="@easy-motion-binding-c"  # camelCase or underscore
 
 read_options() {
     # shellcheck disable=SC2034
-    EASY_MOTION_PREFIX_ENABLED="$(get_tmux_bool_option "${EASY_MOTION_PREFIX_ENABLED_OPTION}" "${EASY_MOTION_PREFIX_ENABLED_DEFAULT}")" && \
-    EASY_MOTION_PREFIX="$(get_tmux_option "${EASY_MOTION_PREFIX_OPTION}" "${EASY_MOTION_PREFIX_DEFAULT}")" && \
-    EASY_MOTION_COPY_MODE_PREFIX_ENABLED="$(get_tmux_bool_option "${EASY_MOTION_COPY_MODE_PREFIX_ENABLED_OPTION}" "${EASY_MOTION_COPY_MODE_PREFIX_ENABLED_DEFAULT}")" && \
-    EASY_MOTION_COPY_MODE_PREFIX="$(get_tmux_option "${EASY_MOTION_COPY_MODE_PREFIX_OPTION}" "${EASY_MOTION_PREFIX}")" && \
-    EASY_MOTION_DIM_STYLE="$(get_tmux_option "${EASY_MOTION_DIM_STYLE_OPTION}" "${EASY_MOTION_DIM_STYLE_DEFAULT}")" && \
-    EASY_MOTION_HIGHLIGHT_STYLE="$(get_tmux_option "${EASY_MOTION_HIGHLIGHT_STYLE_OPTION}" "${EASY_MOTION_HIGHLIGHT_STYLE_DEFAULT}")" && \
-    EASY_MOTION_HIGHLIGHT_2_FIRST_STYLE="$(get_tmux_option "${EASY_MOTION_HIGHLIGHT_2_FIRST_STYLE_OPTION}" "${EASY_MOTION_HIGHLIGHT_2_FIRST_STYLE_DEFAULT}")" && \
-    EASY_MOTION_HIGHLIGHT_2_SECOND_STYLE="$(get_tmux_option "${EASY_MOTION_HIGHLIGHT_2_SECOND_STYLE_OPTION}" "${EASY_MOTION_HIGHLIGHT_2_SECOND_STYLE_DEFAULT}")" && \
-    EASY_MOTION_TARGET_KEYS="$(get_tmux_option "${EASY_MOTION_TARGET_KEYS_OPTION}" "${EASY_MOTION_TARGET_KEYS_DEFAULT}")" && \
-    EASY_MOTION_VERBOSE="$(get_tmux_bool_option "${EASY_MOTION_VERBOSE_OPTION}" "${EASY_MOTION_VERBOSE_DEFAULT}")" && \
-    EASY_MOTION_DEFAULT_KEY_BINDINGS="$(get_tmux_bool_option "${EASY_MOTION_DEFAULT_KEY_BINDINGS_OPTION}" "${EASY_MOTION_DEFAULT_KEY_BINDINGS_DEFAULT}")" && \
-    EASY_MOTION_DEFAULT_MOTION="$(get_tmux_option "${EASY_MOTION_DEFAULT_MOTION_OPTION}" "${EASY_MOTION_DEFAULT_MOTION_DEFAULT}")" || return
+    assign_tmux_bool_option "EASY_MOTION_PREFIX_ENABLED" \
+                            "${EASY_MOTION_PREFIX_ENABLED_OPTION}" \
+                            "${EASY_MOTION_PREFIX_ENABLED_DEFAULT}" && \
+    assign_tmux_option "EASY_MOTION_PREFIX" \
+                       "${EASY_MOTION_PREFIX_OPTION}" \
+                       "${EASY_MOTION_PREFIX_DEFAULT}" && \
+    assign_tmux_bool_option "EASY_MOTION_COPY_MODE_PREFIX_ENABLED" \
+                            "${EASY_MOTION_COPY_MODE_PREFIX_ENABLED_OPTION}" \
+                            "${EASY_MOTION_COPY_MODE_PREFIX_ENABLED_DEFAULT}" && \
+    assign_tmux_option "EASY_MOTION_COPY_MODE_PREFIX" \
+                       "${EASY_MOTION_COPY_MODE_PREFIX_OPTION}" \
+                       "${EASY_MOTION_PREFIX}" && \
+    assign_tmux_option "EASY_MOTION_DIM_STYLE" \
+                       "${EASY_MOTION_DIM_STYLE_OPTION}" \
+                       "${EASY_MOTION_DIM_STYLE_DEFAULT}" && \
+    assign_tmux_option "EASY_MOTION_HIGHLIGHT_STYLE" \
+                       "${EASY_MOTION_HIGHLIGHT_STYLE_OPTION}" \
+                       "${EASY_MOTION_HIGHLIGHT_STYLE_DEFAULT}" && \
+    assign_tmux_option "EASY_MOTION_HIGHLIGHT_2_FIRST_STYLE" \
+                       "${EASY_MOTION_HIGHLIGHT_2_FIRST_STYLE_OPTION}" \
+                       "${EASY_MOTION_HIGHLIGHT_2_FIRST_STYLE_DEFAULT}" && \
+    assign_tmux_option "EASY_MOTION_HIGHLIGHT_2_SECOND_STYLE" \
+                       "${EASY_MOTION_HIGHLIGHT_2_SECOND_STYLE_OPTION}" \
+                       "${EASY_MOTION_HIGHLIGHT_2_SECOND_STYLE_DEFAULT}" && \
+    assign_tmux_option "EASY_MOTION_TARGET_KEYS" \
+                       "${EASY_MOTION_TARGET_KEYS_OPTION}" \
+                       "${EASY_MOTION_TARGET_KEYS_DEFAULT}" && \
+    assign_tmux_bool_option "EASY_MOTION_VERBOSE" \
+                            "${EASY_MOTION_VERBOSE_OPTION}" \
+                            "${EASY_MOTION_VERBOSE_DEFAULT}" && \
+    assign_tmux_bool_option "EASY_MOTION_DEFAULT_KEY_BINDINGS" \
+                            "${EASY_MOTION_DEFAULT_KEY_BINDINGS_OPTION}" \
+                            "${EASY_MOTION_DEFAULT_KEY_BINDINGS_DEFAULT}" && \
+    assign_tmux_option "EASY_MOTION_DEFAULT_MOTION" \
+                       "${EASY_MOTION_DEFAULT_MOTION_OPTION}" \
+                       "${EASY_MOTION_DEFAULT_MOTION_DEFAULT}" || return
 
     # key bindings
     # shellcheck disable=SC2034
     if [[ -z "${EASY_MOTION_DEFAULT_MOTION}" ]]; then
         if (( EASY_MOTION_DEFAULT_KEY_BINDINGS )); then
-            EASY_MOTION_BINDING_B="$(get_tmux_option "${EASY_MOTION_BINDING_B_OPTION}" "${EASY_MOTION_BINDING_B_DEFAULT}")" && \
-            EASY_MOTION_BINDING_CAPITAL_B="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_B_OPTION}" "${EASY_MOTION_BINDING_CAPITAL_B_DEFAULT}")" && \
-            EASY_MOTION_BINDING_GE="$(get_tmux_option "${EASY_MOTION_BINDING_GE_OPTION}" "${EASY_MOTION_BINDING_GE_DEFAULT}")" && \
-            EASY_MOTION_BINDING_CAPITAL_GE="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_GE_OPTION}" "${EASY_MOTION_BINDING_CAPITAL_GE_DEFAULT}")" && \
-            EASY_MOTION_BINDING_E="$(get_tmux_option "${EASY_MOTION_BINDING_E_OPTION}" "${EASY_MOTION_BINDING_E_DEFAULT}")" && \
-            EASY_MOTION_BINDING_CAPITAL_E="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_E_OPTION}" "${EASY_MOTION_BINDING_CAPITAL_E_DEFAULT}")" && \
-            EASY_MOTION_BINDING_W="$(get_tmux_option "${EASY_MOTION_BINDING_W_OPTION}" "${EASY_MOTION_BINDING_W_DEFAULT}")" && \
-            EASY_MOTION_BINDING_CAPITAL_W="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_W_OPTION}" "${EASY_MOTION_BINDING_CAPITAL_W_DEFAULT}")" && \
-            EASY_MOTION_BINDING_J="$(get_tmux_option "${EASY_MOTION_BINDING_J_OPTION}" "${EASY_MOTION_BINDING_J_DEFAULT}")" && \
-            EASY_MOTION_BINDING_CAPITAL_J="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_J_OPTION}" "${EASY_MOTION_BINDING_CAPITAL_J_DEFAULT}")" && \
-            EASY_MOTION_BINDING_K="$(get_tmux_option "${EASY_MOTION_BINDING_K_OPTION}" "${EASY_MOTION_BINDING_K_DEFAULT}")" && \
-            EASY_MOTION_BINDING_CAPITAL_K="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_K_OPTION}" "${EASY_MOTION_BINDING_CAPITAL_K_DEFAULT}")" && \
-            EASY_MOTION_BINDING_F="$(get_tmux_option "${EASY_MOTION_BINDING_F_OPTION}" "${EASY_MOTION_BINDING_F_DEFAULT}")" && \
-            EASY_MOTION_BINDING_CAPITAL_F="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_F_OPTION}" "${EASY_MOTION_BINDING_CAPITAL_F_DEFAULT}")" && \
-            EASY_MOTION_BINDING_T="$(get_tmux_option "${EASY_MOTION_BINDING_T_OPTION}" "${EASY_MOTION_BINDING_T_DEFAULT}")" && \
-            EASY_MOTION_BINDING_CAPITAL_T="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_T_OPTION}" "${EASY_MOTION_BINDING_CAPITAL_T_DEFAULT}")" && \
-            EASY_MOTION_BINDING_BD_W="$(get_tmux_option "${EASY_MOTION_BINDING_BD_W_OPTION}" "${EASY_MOTION_BINDING_BD_W_DEFAULT}")" && \
-            EASY_MOTION_BINDING_CAPITAL_BD_W="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_BD_W_OPTION}" "${EASY_MOTION_BINDING_CAPITAL_BD_W_DEFAULT}")" && \
-            EASY_MOTION_BINDING_BD_E="$(get_tmux_option "${EASY_MOTION_BINDING_BD_E_OPTION}" "${EASY_MOTION_BINDING_BD_E_DEFAULT}")" && \
-            EASY_MOTION_BINDING_CAPITAL_BD_E="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_BD_E_OPTION}" "${EASY_MOTION_BINDING_CAPITAL_BD_E_DEFAULT}")" && \
-            EASY_MOTION_BINDING_BD_J="$(get_tmux_option "${EASY_MOTION_BINDING_BD_J_OPTION}" "${EASY_MOTION_BINDING_BD_J_DEFAULT}")" && \
-            EASY_MOTION_BINDING_CAPITAL_BD_J="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_BD_J_OPTION}" "${EASY_MOTION_BINDING_CAPITAL_BD_J_DEFAULT}")" && \
-            EASY_MOTION_BINDING_BD_F="$(get_tmux_option "${EASY_MOTION_BINDING_BD_F_OPTION}" "${EASY_MOTION_BINDING_BD_F_DEFAULT}")" && \
-            EASY_MOTION_BINDING_BD_T="$(get_tmux_option "${EASY_MOTION_BINDING_BD_T_OPTION}" "${EASY_MOTION_BINDING_BD_T_DEFAULT}")" && \
-            EASY_MOTION_BINDING_CAPITAL_BD_T="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_BD_T_OPTION}" "${EASY_MOTION_BINDING_CAPITAL_BD_T_DEFAULT}")" && \
-            EASY_MOTION_BINDING_C="$(get_tmux_option "${EASY_MOTION_BINDING_C_OPTION}" "${EASY_MOTION_BINDING_C_DEFAULT}")"
+            assign_tmux_option "EASY_MOTION_BINDING_B" \
+                               "${EASY_MOTION_BINDING_B_OPTION}" \
+                               "${EASY_MOTION_BINDING_B_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_B" \
+                               "${EASY_MOTION_BINDING_CAPITAL_B_OPTION}" \
+                               "${EASY_MOTION_BINDING_CAPITAL_B_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_GE" \
+                               "${EASY_MOTION_BINDING_GE_OPTION}" \
+                               "${EASY_MOTION_BINDING_GE_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_GE" \
+                               "${EASY_MOTION_BINDING_CAPITAL_GE_OPTION}" \
+                               "${EASY_MOTION_BINDING_CAPITAL_GE_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_E" \
+                               "${EASY_MOTION_BINDING_E_OPTION}" \
+                               "${EASY_MOTION_BINDING_E_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_E" \
+                               "${EASY_MOTION_BINDING_CAPITAL_E_OPTION}" \
+                               "${EASY_MOTION_BINDING_CAPITAL_E_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_W" \
+                               "${EASY_MOTION_BINDING_W_OPTION}" \
+                               "${EASY_MOTION_BINDING_W_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_W" \
+                               "${EASY_MOTION_BINDING_CAPITAL_W_OPTION}" \
+                               "${EASY_MOTION_BINDING_CAPITAL_W_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_J" \
+                               "${EASY_MOTION_BINDING_J_OPTION}" \
+                               "${EASY_MOTION_BINDING_J_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_J" \
+                               "${EASY_MOTION_BINDING_CAPITAL_J_OPTION}" \
+                               "${EASY_MOTION_BINDING_CAPITAL_J_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_K" \
+                               "${EASY_MOTION_BINDING_K_OPTION}" \
+                               "${EASY_MOTION_BINDING_K_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_K" \
+                               "${EASY_MOTION_BINDING_CAPITAL_K_OPTION}" \
+                               "${EASY_MOTION_BINDING_CAPITAL_K_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_F" \
+                               "${EASY_MOTION_BINDING_F_OPTION}" \
+                               "${EASY_MOTION_BINDING_F_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_F" \
+                               "${EASY_MOTION_BINDING_CAPITAL_F_OPTION}" \
+                               "${EASY_MOTION_BINDING_CAPITAL_F_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_T" \
+                               "${EASY_MOTION_BINDING_T_OPTION}" \
+                               "${EASY_MOTION_BINDING_T_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_T" \
+                               "${EASY_MOTION_BINDING_CAPITAL_T_OPTION}" \
+                               "${EASY_MOTION_BINDING_CAPITAL_T_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_BD_W" \
+                               "${EASY_MOTION_BINDING_BD_W_OPTION}" \
+                               "${EASY_MOTION_BINDING_BD_W_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_BD_W" \
+                               "${EASY_MOTION_BINDING_CAPITAL_BD_W_OPTION}" \
+                               "${EASY_MOTION_BINDING_CAPITAL_BD_W_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_BD_E" \
+                               "${EASY_MOTION_BINDING_BD_E_OPTION}" \
+                               "${EASY_MOTION_BINDING_BD_E_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_BD_E" \
+                               "${EASY_MOTION_BINDING_CAPITAL_BD_E_OPTION}" \
+                               "${EASY_MOTION_BINDING_CAPITAL_BD_E_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_BD_J" \
+                               "${EASY_MOTION_BINDING_BD_J_OPTION}" \
+                               "${EASY_MOTION_BINDING_BD_J_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_BD_J" \
+                               "${EASY_MOTION_BINDING_CAPITAL_BD_J_OPTION}" \
+                               "${EASY_MOTION_BINDING_CAPITAL_BD_J_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_BD_F" \
+                               "${EASY_MOTION_BINDING_BD_F_OPTION}" \
+                               "${EASY_MOTION_BINDING_BD_F_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_BD_T" \
+                               "${EASY_MOTION_BINDING_BD_T_OPTION}" \
+                               "${EASY_MOTION_BINDING_BD_T_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_BD_T" \
+                               "${EASY_MOTION_BINDING_CAPITAL_BD_T_OPTION}" \
+                               "${EASY_MOTION_BINDING_CAPITAL_BD_T_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_C" \
+                               "${EASY_MOTION_BINDING_C_OPTION}" \
+                               "${EASY_MOTION_BINDING_C_DEFAULT}"
         else
-            EASY_MOTION_BINDING_B="$(get_tmux_option "${EASY_MOTION_BINDING_B_OPTION}" "")" && \
-            EASY_MOTION_BINDING_CAPITAL_B="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_B_OPTION}" "")" && \
-            EASY_MOTION_BINDING_GE="$(get_tmux_option "${EASY_MOTION_BINDING_GE_OPTION}" "")" && \
-            EASY_MOTION_BINDING_CAPITAL_GE="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_GE_OPTION}" "")" && \
-            EASY_MOTION_BINDING_E="$(get_tmux_option "${EASY_MOTION_BINDING_E_OPTION}" "")" && \
-            EASY_MOTION_BINDING_CAPITAL_E="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_E_OPTION}" "")" && \
-            EASY_MOTION_BINDING_W="$(get_tmux_option "${EASY_MOTION_BINDING_W_OPTION}" "")" && \
-            EASY_MOTION_BINDING_CAPITAL_W="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_W_OPTION}" "")" && \
-            EASY_MOTION_BINDING_J="$(get_tmux_option "${EASY_MOTION_BINDING_J_OPTION}" "")" && \
-            EASY_MOTION_BINDING_CAPITAL_J="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_J_OPTION}" "")" && \
-            EASY_MOTION_BINDING_K="$(get_tmux_option "${EASY_MOTION_BINDING_K_OPTION}" "")" && \
-            EASY_MOTION_BINDING_CAPITAL_K="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_K_OPTION}" "")" && \
-            EASY_MOTION_BINDING_F="$(get_tmux_option "${EASY_MOTION_BINDING_F_OPTION}" "")" && \
-            EASY_MOTION_BINDING_CAPITAL_F="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_F_OPTION}" "")" && \
-            EASY_MOTION_BINDING_T="$(get_tmux_option "${EASY_MOTION_BINDING_T_OPTION}" "")" && \
-            EASY_MOTION_BINDING_CAPITAL_T="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_T_OPTION}" "")" && \
-            EASY_MOTION_BINDING_BD_W="$(get_tmux_option "${EASY_MOTION_BINDING_BD_W_OPTION}" "")" && \
-            EASY_MOTION_BINDING_CAPITAL_BD_W="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_BD_W_OPTION}" "")" && \
-            EASY_MOTION_BINDING_BD_E="$(get_tmux_option "${EASY_MOTION_BINDING_BD_E_OPTION}" "")" && \
-            EASY_MOTION_BINDING_CAPITAL_BD_E="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_BD_E_OPTION}" "")" && \
-            EASY_MOTION_BINDING_BD_J="$(get_tmux_option "${EASY_MOTION_BINDING_BD_J_OPTION}" "")" && \
-            EASY_MOTION_BINDING_CAPITAL_BD_J="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_BD_J_OPTION}" "")" && \
-            EASY_MOTION_BINDING_BD_F="$(get_tmux_option "${EASY_MOTION_BINDING_BD_F_OPTION}" "")" && \
-            EASY_MOTION_BINDING_BD_T="$(get_tmux_option "${EASY_MOTION_BINDING_BD_T_OPTION}" "")" && \
-            EASY_MOTION_BINDING_CAPITAL_BD_T="$(get_tmux_option "${EASY_MOTION_BINDING_CAPITAL_BD_T_OPTION}" "")" && \
-            EASY_MOTION_BINDING_C="$(get_tmux_option "${EASY_MOTION_BINDING_C_OPTION}" "")"
+            assign_tmux_option "EASY_MOTION_BINDING_B" \
+                               "${EASY_MOTION_BINDING_B_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_B" \
+                               "${EASY_MOTION_BINDING_CAPITAL_B_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_GE" \
+                               "${EASY_MOTION_BINDING_GE_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_GE" \
+                               "${EASY_MOTION_BINDING_CAPITAL_GE_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_E" \
+                               "${EASY_MOTION_BINDING_E_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_E" \
+                               "${EASY_MOTION_BINDING_CAPITAL_E_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_W" \
+                               "${EASY_MOTION_BINDING_W_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_W" \
+                               "${EASY_MOTION_BINDING_CAPITAL_W_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_J" \
+                               "${EASY_MOTION_BINDING_J_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_J" \
+                               "${EASY_MOTION_BINDING_CAPITAL_J_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_K" \
+                               "${EASY_MOTION_BINDING_K_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_K" \
+                               "${EASY_MOTION_BINDING_CAPITAL_K_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_F" \
+                               "${EASY_MOTION_BINDING_F_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_F" \
+                               "${EASY_MOTION_BINDING_CAPITAL_F_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_T" \
+                               "${EASY_MOTION_BINDING_T_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_T" \
+                               "${EASY_MOTION_BINDING_CAPITAL_T_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_BD_W" \
+                               "${EASY_MOTION_BINDING_BD_W_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_BD_W" \
+                               "${EASY_MOTION_BINDING_CAPITAL_BD_W_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_BD_E" \
+                               "${EASY_MOTION_BINDING_BD_E_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_BD_E" \
+                               "${EASY_MOTION_BINDING_CAPITAL_BD_E_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_BD_J" \
+                               "${EASY_MOTION_BINDING_BD_J_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_BD_J" \
+                               "${EASY_MOTION_BINDING_CAPITAL_BD_J_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_BD_F" \
+                               "${EASY_MOTION_BINDING_BD_F_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_BD_T" \
+                               "${EASY_MOTION_BINDING_BD_T_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_CAPITAL_BD_T" \
+                               "${EASY_MOTION_BINDING_CAPITAL_BD_T_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_C" \
+                               "${EASY_MOTION_BINDING_C_OPTION}" \
+                               ""
         fi
     fi
 }

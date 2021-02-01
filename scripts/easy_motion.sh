@@ -15,11 +15,9 @@ source "${SCRIPTS_DIR}/options.sh"
 
 
 easy_motion_create_work_buffer_and_pipe() {
-    local session_id window_id pane_id
+    local pane_id
 
-    session_id="$1"
-    window_id="$2"
-    pane_id="$3"
+    pane_id="$1"
 
     if [[ -z "${CAPTURE_TMP_DIRECTORY}" ]]; then
         CAPTURE_TMP_DIRECTORY="$(mktemp -d)" || return
@@ -31,7 +29,7 @@ easy_motion_create_work_buffer_and_pipe() {
         }
         trap _capture_tmp_directory_cleanup EXIT
     fi
-    capture_pane "${session_id}" "${window_id}" "${pane_id}" "${CAPTURE_TMP_DIRECTORY}/${CAPTURE_PANE_FILENAME}" && \
+    capture_pane "${pane_id}" "${CAPTURE_TMP_DIRECTORY}/${CAPTURE_PANE_FILENAME}" && \
     chmod 400 "${CAPTURE_TMP_DIRECTORY}/${CAPTURE_PANE_FILENAME}" && \
     mkfifo "${CAPTURE_TMP_DIRECTORY}/${JUMP_COMMAND_PIPENAME}"
 }
@@ -43,14 +41,14 @@ easy_motion_setup() {
     window_id="$2"
     pane_id="$3"
 
-    tmux copy-mode -t "${session_id}:${window_id}.${pane_id}" && \
-    EASY_MOTION_CURSOR_POSITION="$(read_cursor_position "${session_id}" "${window_id}" "${pane_id}")" && \
-    EASY_MOTION_PANE_SIZE="$(get_pane_size "${session_id}" "${window_id}" "${pane_id}")" && \
+    tmux copy-mode -t "${pane_id}" && \
+    EASY_MOTION_CURSOR_POSITION="$(read_cursor_position "${pane_id}")" && \
+    EASY_MOTION_PANE_SIZE="$(get_pane_size "${pane_id}")" && \
     EASY_MOTION_ORIGINAL_SESSION_ID="${session_id}" && \
     EASY_MOTION_ORIGINAL_WINDOW_ID="${window_id}" && \
     EASY_MOTION_ORIGINAL_PANE_ID="${pane_id}" && \
-    EASY_MOTION_IS_PANE_ZOOMED="$(is_pane_zoomed "${session_id}" "${window_id}" "${pane_id}" && echo 1 || echo 0)" && \
-    easy_motion_create_work_buffer_and_pipe "${session_id}" "${window_id}" "${pane_id}" && \
+    EASY_MOTION_IS_PANE_ZOOMED="$(is_pane_zoomed "${pane_id}" && echo 1 || echo 0)" && \
+    easy_motion_create_work_buffer_and_pipe "${pane_id}" && \
     easy_motion_window_and_pane_ids="$(create_empty_swap_pane "${session_id}" "${window_id}" "${pane_id}" "easy-motion")"
     EASY_MOTION_WINDOW_ID=$(cut -d: -f1 <<< "${easy_motion_window_and_pane_ids}") && \
     EASY_MOTION_PANE_ID=$(cut -d: -f2 <<< "${easy_motion_window_and_pane_ids}")
@@ -62,9 +60,10 @@ easy_motion_toggle_pane() {
         if [[ -n "${EASY_MOTION_ORIGINAL_PANE_ID}" ]]; then
             tmux set-window-option -t "${EASY_MOTION_ORIGINAL_PANE_ID}" key-table root && \
             tmux switch-client -t "${EASY_MOTION_ORIGINAL_PANE_ID}" -T root && \
-            swap_pane "${EASY_MOTION_ORIGINAL_PANE_ID}" "${EASY_MOTION_PANE_ID}" && \
             if (( EASY_MOTION_IS_PANE_ZOOMED )); then
-                zoom_pane "${EASY_MOTION_ORIGINAL_PANE_ID}"
+                swap_window "${EASY_MOTION_ORIGINAL_WINDOW_ID}" "${EASY_MOTION_WINDOW_ID}" || return
+            else
+                swap_pane "${EASY_MOTION_ORIGINAL_PANE_ID}" "${EASY_MOTION_PANE_ID}" || return
             fi
             EASY_MOTION_PANE_ACTIVE=0
         fi
@@ -72,9 +71,10 @@ easy_motion_toggle_pane() {
         if [[ -n "${EASY_MOTION_PANE_ID}" ]]; then
             tmux set-window-option -t "${EASY_MOTION_PANE_ID}" key-table easy-motion-target && \
             tmux switch-client -t "${EASY_MOTION_PANE_ID}" -T easy-motion-target && \
-            swap_pane "${EASY_MOTION_PANE_ID}" "${EASY_MOTION_ORIGINAL_PANE_ID}" && \
             if (( EASY_MOTION_IS_PANE_ZOOMED )); then
-                zoom_pane "${EASY_MOTION_PANE_ID}"
+                swap_window "${EASY_MOTION_WINDOW_ID}" "${EASY_MOTION_ORIGINAL_WINDOW_ID}" || return
+            else
+                swap_pane "${EASY_MOTION_PANE_ID}" "${EASY_MOTION_ORIGINAL_PANE_ID}" || return
             fi
             EASY_MOTION_PANE_ACTIVE=1
         fi
@@ -133,7 +133,7 @@ easy_motion() {
         if [[ "${ready_command}" != "single-target" ]]; then
             easy_motion_toggle_pane || return
         fi
-        set_cursor_position "${session_id}" "${window_id}" "${pane_id}" "${jump_cursor_position}"
+        set_cursor_position "${pane_id}" "${jump_cursor_position}"
     } < "${CAPTURE_TMP_DIRECTORY}/${JUMP_COMMAND_PIPENAME}"
 }
 

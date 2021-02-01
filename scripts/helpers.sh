@@ -187,49 +187,58 @@ display_message() {
     tmux display-message "$1"
 }
 
-get_tmux_option() {
-    local option default_value option_value
+assign_tmux_option() {
+    local variable option default_value option_value ignore_case
 
-    option="$1"
-    default_value="$2"
-
-    option_value="$(tmux show-option -gqv "${option}")"
-    if [[ -z "${option_value}" ]]; then
-        echo "${default_value}"
+    variable="$1"
+    option="$2"
+    default_value="$3"
+    if [[ "$4" == "ignore_case" ]]; then
+        ignore_case=1
     else
-        echo "${option_value}"
+        ignore_case=0
+    fi
+
+    if (( ignore_case )); then
+        option_value="$(tmux show-option -gqv "${option}" | awk '{ print tolower($0) }')"
+    else
+        option_value="$(tmux show-option -gqv "${option}")"
+    fi
+    if [[ -z "${option_value}" ]]; then
+        eval "${variable}=\${default_value}"
+    else
+        eval "${variable}=\${option_value}"
     fi
 }
 
-get_tmux_bool_option() {
-    local option default_value option_value
+assign_tmux_bool_option() {
+    local variable option default_value bool_option_value
 
-    option="$1"
-    default_value="$2"
+    variable="$1"
+    option="$2"
+    default_value="$3"
 
-    option_value="$(get_tmux_option "${option}" "${default_value}" | awk '{ print tolower($0) }')"
-    case "${option_value}" in
-        1|yes|on|enabled|activated)
-            echo "1"
+    assign_tmux_option "bool_option_value" "${option}" "${default_value}" "ignore_case"
+    case "${bool_option_value}" in
+        1|activated|enabled|on|true|yes)
+            eval "${variable}='1'"
             ;;
         *)
-            echo "0"
+            eval "${variable}='0'"
             ;;
     esac
 }
 
 capture_pane() {
-    local session_id window_id pane_id capture_filepath
+    local pane_id capture_filepath
     local current_pane_scroll_start current_pane_scroll_end
 
-    session_id="$1"
-    window_id="$2"
-    pane_id="$3"
-    capture_filepath="$4"
+    pane_id="$1"
+    capture_filepath="$2"
 
     IFS=':' read -r current_pane_scroll_start current_pane_scroll_end <<< \
-        "$(get_pane_scroll_range "${session_id}" "${window_id}" "${pane_id}")"
-    tmux capture-pane -t "${session_id}:${window_id}.${pane_id}" \
+        "$(get_pane_scroll_range "${pane_id}")"
+    tmux capture-pane -t "${pane_id}" \
                       -p \
                       -S "${current_pane_scroll_start}" \
                       -E "${current_pane_scroll_end}" \
@@ -237,46 +246,62 @@ capture_pane() {
 }
 
 get_pane_scroll_range() {
-    local session_id window_id pane_id
+    local pane_id
     local current_pane_scroll_position current_pane_height
 
-    session_id="$1"
-    window_id="$2"
-    pane_id="$3"
+    pane_id="$1"
 
     IFS=':' read -r current_pane_scroll_position current_pane_height <<< \
-        "$(tmux display-message -p -t "${session_id}:${window_id}.${pane_id}" -F "#{scroll_position}:#{pane_height}")"
+        "$(tmux display-message -p -t "${pane_id}" "#{scroll_position}:#{pane_height}")"
 
     echo "$(( - current_pane_scroll_position )):$(( - current_pane_scroll_position + current_pane_height - 1 ))"
 }
 
 get_pane_size() {
-    local session_id window_id pane_id
+    local pane_id
 
-    session_id="$1"
-    window_id="$2"
-    pane_id="$3"
+    pane_id="$1"
 
-    tmux display-message -p -t "${session_id}:${window_id}.${pane_id}" -F "#{pane_width}:#{pane_height}"
+    tmux display-message -p -t "${pane_id}" "#{pane_width}:#{pane_height}"
 }
 
 get_window_size() {
-    local session_id window_id
+    local window_id
 
-    session_id="$1"
-    window_id="$2"
+    window_id="$1"
 
-    tmux display-message -p -t "${session_id}:${window_id}" "#{window_width}:#{window_height}"
+    tmux display-message -p -t "${window_id}" "#{window_width}:#{window_height}"
+}
+
+get_window_name() {
+    local window_id
+
+    window_id="$1"
+
+    tmux display-message -p -t "${window_id}" "#{window_name}"
 }
 
 is_pane_zoomed() {
-    local session_id window_id pane_id
+    local pane_id
 
-    session_id="$1"
-    window_id="$2"
-    pane_id="$3"
+    pane_id="$1"
 
-    [[ "$(tmux display-message -p -t "${session_id}:${window_id}.${pane_id}" -F "#{?window_zoomed_flag,zoomed,not_zoomed}")" == "zoomed" ]]
+    (( $(tmux display-message -p -t "${pane_id}" "#{window_zoomed_flag}") ))
+}
+
+swap_window() {
+    local target_window_id source_window_id
+    local target_window_name source_window_name
+
+    target_window_id="$1"
+    source_window_id="$2"
+
+    target_window_name="$(get_window_name "${target_window_id}")"
+    source_window_name="$(get_window_name "${source_window_id}")"
+
+    tmux swap-window -s "${source_window_id}" -t "${target_window_id}" && \
+    tmux rename-window -t "${target_window_id}" "${source_window_name}" && \
+    tmux rename-window -t "${source_window_id}" "${target_window_name}"
 }
 
 swap_pane() {
@@ -288,16 +313,9 @@ swap_pane() {
     tmux swap-pane -s "${source_pane_id}" -t "${target_pane_id}"
 }
 
-zoom_pane() {
-    local pane_id
-
-    pane_id="$1"
-    tmux resize-pane -Z -t "${pane_id}"
-}
-
 # Based on https://github.com/Morantron/tmux-fingers/blob/1.0.1/scripts/tmux-fingers.sh#L10
 create_empty_swap_pane() {
-    local name session_id window_id pane_id
+    local session_id window_id pane_id name
     local swap_window_and_pane_ids swap_window_id swap_pane_id
     local current_pane_width current_pane_height
     local current_window_width current_window_height
@@ -327,8 +345,13 @@ create_empty_swap_pane() {
 
     swap_window_and_pane_ids="$(tmux new-window -t "${session_id}" -F "#{window_id}:#{pane_id}" -P -d -n "[${name}]" "$(init_pane_cmd)")"
     IFS=':' read -r swap_window_id swap_pane_id <<< "${swap_window_and_pane_ids}"
-    IFS=':' read -r current_pane_width current_pane_height <<< "$(get_pane_size "${session_id}" "${window_id}" "${pane_id}")"
-    IFS=':' read -r current_window_width current_window_height <<< "$(get_window_size "${session_id}" "${window_id}")"
+    IFS=':' read -r current_window_width current_window_height <<< "$(get_window_size "${window_id}")"
+    if is_pane_zoomed "${pane_id}"; then
+        current_pane_width="${current_window_width}"
+        current_pane_height="${current_window_height}"
+    else
+        IFS=':' read -r current_pane_width current_pane_height <<< "$(get_pane_size "${pane_id}")"
+    fi
 
     split_width="$(( current_window_width - current_pane_width - 1 ))"
     split_height="$(( current_window_height - current_pane_height - 1 ))"
@@ -361,52 +384,46 @@ pane_exec() {
 }
 
 is_pane_in_copy_mode() {
-    local session_id window_id pane_id
+    local pane_id
 
-    session_id="$1"
-    window_id="$2"
-    pane_id="$3"
+    pane_id="$1"
 
-    [[ "$(tmux display-message -p -t "${session_id}:${window_id}.${pane_id}" "#{?pane_in_mode,copy,nocopy}")" == "copy" ]]
+    (( $(tmux display-message -p -t "${pane_id}" "#{pane_in_mode}") ))
 }
 
 read_cursor_position() {
-    local session_id window_id pane_id
+    local pane_id
 
-    session_id="$1"
-    window_id="$2"
-    pane_id="$3"
+    pane_id="$1"
 
     local cursor_type
 
-    if is_pane_in_copy_mode "${session_id}" "${window_id}" "${pane_id}"; then
+    if is_pane_in_copy_mode "${pane_id}"; then
         cursor_type="copy_cursor"
     else
         cursor_type="cursor"
     fi
-    tmux display-message -t "${session_id}:${window_id}.${pane_id}" -p -F "#{${cursor_type}_y}:#{${cursor_type}_x}"
+    tmux display-message -p -t "${pane_id}" "#{${cursor_type}_y}:#{${cursor_type}_x}"
 }
 
 set_cursor_position() {
-    local session_id window_id pane_id row_col
+    local pane_id row_col
     local row col old_row old_col rel_row
 
-    session_id="$1"
-    window_id="$2"
-    pane_id="$3"
-    row_col="$4"
+    pane_id="$1"
+    row_col="$2"
 
     IFS=':' read -r row col <<< "${row_col}"
-    IFS=':' read -r old_row old_col <<< "$(read_cursor_position "${session_id}" "${window_id}" "${pane_id}")"
+    IFS=':' read -r old_row old_col <<< "$(read_cursor_position "${pane_id}")"
     rel_row="$(( row - old_row ))"
-    tmux copy-mode -t "${session_id}:${window_id}.${pane_id}"
+    tmux copy-mode -t "${pane_id}"
     if (( rel_row < 0 )); then
-        tmux send-keys -t "${session_id}:${window_id}.${pane_id}" -X -N "$(( -rel_row ))" cursor-up
+        tmux send-keys -t "${pane_id}" -X -N "$(( -rel_row ))" cursor-up
     elif (( rel_row > 0 )); then
-        tmux send-keys -t "${session_id}:${window_id}.${pane_id}" -X -N "$(( rel_row ))" cursor-down
+        tmux send-keys -t "${pane_id}" -X -N "$(( rel_row ))" cursor-down
     fi
     # Relative colum positioning does not work since tmux can change the column
     # while moving the cursor up or down (like in vim).
-    tmux send-keys -t "${session_id}:${window_id}.${pane_id}" -X start-of-line
-    tmux send-keys -t "${session_id}:${window_id}.${pane_id}" -X -N "$(( col ))" cursor-right
+    tmux send-keys -t "${pane_id}" -X start-of-line
+    tmux send-keys -t "${pane_id}" -X -N "$(( col ))" cursor-right
 }
