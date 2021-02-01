@@ -8,7 +8,9 @@ source "${SCRIPTS_DIR}/helpers.sh"
 
 
 # Default settings
+EASY_MOTION_PREFIX_ENABLED_DEFAULT=1
 EASY_MOTION_PREFIX_DEFAULT="Space"
+EASY_MOTION_COPY_MODE_PREFIX_ENABLED_DEFAULT=1
 EASY_MOTION_DIM_STYLE_DEFAULT="fg=colour242"
 EASY_MOTION_HIGHLIGHT_STYLE_DEFAULT="fg=colour196,bold"
 EASY_MOTION_HIGHLIGHT_2_FIRST_STYLE_DEFAULT="fg=brightyellow,bold"
@@ -46,7 +48,10 @@ EASY_MOTION_BINDING_CAPITAL_BD_T_DEFAULT=""
 EASY_MOTION_BINDING_C_DEFAULT="c"
 
 # Option names
+EASY_MOTION_PREFIX_ENABLED_OPTION="@easy-motion-prefix-enabled"
 EASY_MOTION_PREFIX_OPTION="@easy-motion-prefix"
+EASY_MOTION_COPY_MODE_PREFIX_ENABLED_OPTION="@easy-motion-copy-mode-prefix-enabled"
+EASY_MOTION_COPY_MODE_PREFIX_OPTION="@easy-motion-copy-mode-prefix"
 EASY_MOTION_DIM_STYLE_OPTION="@easy-motion-dim-style"
 EASY_MOTION_HIGHLIGHT_STYLE_OPTION="@easy-motion-highlight-style"
 EASY_MOTION_HIGHLIGHT_2_FIRST_STYLE_OPTION="@easy-motion-highlight-2-first-style"
@@ -86,9 +91,18 @@ EASY_MOTION_BINDING_C_OPTION="@easy-motion-binding-c"  # camelCase or underscore
 
 read_options() {
     # shellcheck disable=SC2034
+    assign_tmux_bool_option "EASY_MOTION_PREFIX_ENABLED" \
+                            "${EASY_MOTION_PREFIX_ENABLED_OPTION}" \
+                            "${EASY_MOTION_PREFIX_ENABLED_DEFAULT}" && \
     assign_tmux_option "EASY_MOTION_PREFIX" \
                        "${EASY_MOTION_PREFIX_OPTION}" \
                        "${EASY_MOTION_PREFIX_DEFAULT}" && \
+    assign_tmux_bool_option "EASY_MOTION_COPY_MODE_PREFIX_ENABLED" \
+                            "${EASY_MOTION_COPY_MODE_PREFIX_ENABLED_OPTION}" \
+                            "${EASY_MOTION_COPY_MODE_PREFIX_ENABLED_DEFAULT}" && \
+    assign_tmux_option "EASY_MOTION_COPY_MODE_PREFIX" \
+                       "${EASY_MOTION_COPY_MODE_PREFIX_OPTION}" \
+                       "${EASY_MOTION_PREFIX}" && \
     assign_tmux_option "EASY_MOTION_DIM_STYLE" \
                        "${EASY_MOTION_DIM_STYLE_OPTION}" \
                        "${EASY_MOTION_DIM_STYLE_DEFAULT}" && \
