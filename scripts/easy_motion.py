@@ -461,9 +461,9 @@ def convert_row_col_to_text_pos(row, col, text):
     # type: (int, int, str) -> int
     lines = text.split("\n")
     # Limit `row` and `col` to the existing text
-    row = min(row, len(lines) - 1)
+    row = max(min(row, len(lines) - 1), 0)
     row_line = lines[row]
-    col = min(col, len(row_line) - 1)
+    col = max(min(col, len(row_line) - 1), 0)
 
     cursor_position = sum(len(line) for line in lines[:row]) + col
     cursor_position += row  # add `row` newline characters
