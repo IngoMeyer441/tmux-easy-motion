@@ -408,7 +408,7 @@ read_cursor_position() {
 
 set_cursor_position() {
     local pane_id row_col
-    local row col current_row current_col rel_row
+    local row col current_row current_col rel_row rel_col
 
     pane_id="$1"
     row_col="$2"
@@ -422,14 +422,13 @@ set_cursor_position() {
     elif (( rel_row > 0 )); then
         tmux send-keys -t "${pane_id}" -X -N "$(( rel_row ))" cursor-down
     fi
-    # Relative colum positioning does not work since tmux can change the column
+    # Reread the cursor position since the colum can change
     # while moving the cursor up or down (like in vim).
     IFS=':' read -r current_row current_col <<< "$(read_cursor_position "${pane_id}")"
-    # Only execute `start-of-line` if the cursor is not at the start of the line,
-    # otherwise the cursor could change the row on wrapped text (`start-of-line`
-    # can be used twice on wrapped lines)
-    if (( current_col > 0 )); then
-        tmux send-keys -t "${pane_id}" -X start-of-line
+    rel_col="$(( col - current_col ))"
+    if (( rel_col < 0 )); then
+        tmux send-keys -t "${pane_id}" -X -N "$(( -rel_col ))" cursor-left
+    elif (( rel_col > 0 )); then
+        tmux send-keys -t "${pane_id}" -X -N "$(( rel_col ))" cursor-right
     fi
-    tmux send-keys -t "${pane_id}" -X -N "$(( col ))" cursor-right
 }
