@@ -1,13 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import codecs
-import os
 import re
 import sys
 import termios
@@ -22,19 +18,19 @@ else:
 
 try:
     from typing import (  # noqa: F401  # pylint: disable=unused-import
-        cast,
+        IO,
         Any,
         AnyStr,
         Callable,
         Dict,
-        IO,
+        Generator,
         Iterable,
         Iterator,
-        Generator,
         List,
         Optional,
         Tuple,
         Union,
+        cast,
     )
 except ImportError:
     cast = lambda t, x: x  # type: ignore  # noqa: E731
@@ -652,8 +648,10 @@ def print_text_with_targets(
         JumpTarget.GROUP: highlight_2_first_style_code,
         JumpTarget.PREVIEW: highlight_2_second_style_code,
     }
-    jump_targets = sorted(generate_jump_targets(grouped_indices, target_keys), key=lambda x: x[1])
-    out_buffer_parts = []
+    # First, sort for the text position. If text positions are equal (can happen with preview keys), sort for the
+    # target type: direct < group < preview
+    jump_targets = sorted(generate_jump_targets(grouped_indices, target_keys), key=lambda x: (x[1], x[0]))
+    out_buffer_parts = []  # type: List[str]
     previous_text_pos = -1
     for target_type, text_pos, target_key in jump_targets:
         append_to_buffer = False
@@ -668,16 +666,15 @@ def print_text_with_targets(
             if previous_newline_index > text_pos - terminal_width - 1:
                 append_to_buffer = True
         if append_to_buffer:
-            out_buffer_parts.extend(
-                [
-                    dim_style_code,
-                    capture_buffer[previous_text_pos + 1 : text_pos],
-                    TerminalCodes.Style.RESET,
-                    target_type_to_color[target_type],
-                    target_key,
-                    TerminalCodes.Style.RESET,
-                ]
-            )
+            if text_pos > previous_text_pos + 1:
+                out_buffer_parts.extend(
+                    [dim_style_code, capture_buffer[previous_text_pos + 1 : text_pos], TerminalCodes.Style.RESET]
+                )
+            if text_pos > previous_text_pos:
+                # Skip targets if they share the same text position, otherwise the text would be shifted on screen. The
+                # first target on a text position should always be prefered due to the sorting order of target types
+                # (see comment in line 651)
+                out_buffer_parts.extend([target_type_to_color[target_type], target_key, TerminalCodes.Style.RESET])
         if append_extra_newline:
             out_buffer_parts.append("\n")
         previous_text_pos = text_pos
