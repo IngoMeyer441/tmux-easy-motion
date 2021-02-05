@@ -1,13 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import codecs
-import os
 import re
 import sys
 import termios
@@ -22,19 +18,19 @@ else:
 
 try:
     from typing import (  # noqa: F401  # pylint: disable=unused-import
-        cast,
+        IO,
         Any,
         AnyStr,
         Callable,
         Dict,
-        IO,
+        Generator,
         Iterable,
         Iterator,
-        Generator,
         List,
         Optional,
         Tuple,
         Union,
+        cast,
     )
 except ImportError:
     cast = lambda t, x: x  # type: ignore  # noqa: E731
