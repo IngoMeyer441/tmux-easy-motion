@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import codecs
 import re
+import subprocess
 import sys
 import termios
 import time
@@ -349,6 +350,11 @@ class JumpTarget(object):
     DIRECT = 0
     GROUP = 1
     PREVIEW = 2
+
+
+def display_tmux_message(message):
+    # type: (str) -> None
+    subprocess.check_call(["tmux", "display-message", message], universal_newlines=True)
 
 
 def parse_arguments():
@@ -854,7 +860,8 @@ def main():
         MissingJumpCommandPipeFilepathError,
         MissingTargetKeyPipeFilepathError,
         InvalidTargetError,
-    ):
+    ) as e:
+        display_tmux_message("Error: {}".format(e))
         exit_code = 1
     # Wait a moment before returning to Bash to avoid flicker
     time.sleep(1)
