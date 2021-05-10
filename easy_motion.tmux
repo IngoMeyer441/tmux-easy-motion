@@ -10,8 +10,8 @@ source "${SCRIPTS_DIR}/options.sh"
 
 
 check_version() {
-    if ! is_tmux_version_greater_or_equal "3.0"; then
-        display_message "tmux-easy-motion needs tmux version 3.0 or newer."
+    if ! is_tmux_version_greater_or_equal "3.1"; then
+        display_message "tmux-easy-motion needs tmux version 3.1 or newer."
         return 1
     fi
 }

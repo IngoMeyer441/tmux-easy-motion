@@ -36,7 +36,7 @@ source code helped a lot to understand how an easy-motion plugin can be implemen
 
 ## Requirements
 
-This plugin needs at least tmux 3.0 and Python 2.7 or 3.3+. You can check your installed tmux version with
+This plugin needs at least tmux 3.1 and Python 2.7 or 3.3+. You can check your installed tmux version with
 
 ```bash
 tmux -V
