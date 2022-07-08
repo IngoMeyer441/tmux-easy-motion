@@ -31,6 +31,10 @@ implementation which adds much more easy-motion movements. All standard vi motio
 - `bd-T`
 - `c` (target camelCase or underscore notations)
 
+By default, only the standard vim motions, `J`, `K` and `c` are bound to the keyboard. If you would like to use a
+bidirectional motions, you need to configure a key binding for it. See the [key-bindings
+section](https://github.com/IngoMeyer441/tmux-easy-motion#key-bindings) of this README for more details.
+
 Special thanks to the authors of the [tmux-fingers](https://github.com/Morantron/tmux-fingers) project. Reading their
 source code helped a lot to understand how an easy-motion plugin can be implemented for tmux.
 
@@ -156,7 +160,7 @@ Example:
 set -g @easy-motion-default-motion "bd-w"
 ```
 
-This setting will cause the highlight all word beginnings (bidirectional) after pressing the configured easy-motion
+This setting will cause the highlight of all word beginnings (bidirectional) after pressing the configured easy-motion
 prefix key.
 
 ### Target keys
