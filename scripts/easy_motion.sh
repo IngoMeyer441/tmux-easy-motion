@@ -134,6 +134,10 @@ easy_motion() {
             easy_motion_toggle_pane || return
         fi
         set_cursor_position "${pane_id}" "${jump_cursor_position}"
+
+        if (( EASY_MOTION_AUTO_BEGIN_SELECTION )); then
+            tmux send-keys -t "${pane_id}" -X begin-selection
+        fi
     } < "${CAPTURE_TMP_DIRECTORY}/${JUMP_COMMAND_PIPENAME}"
 }
 
