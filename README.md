@@ -215,10 +215,10 @@ selected.
 
 By setting
 ```
-set -g @easy-motion-auto-begin-selection "false"
+set -g @easy-motion-auto-begin-selection "true"
 ```
 
-you can disable the automatic start of selection
+you can enable the automatic start of selection
 
 ## Other plugins
 
