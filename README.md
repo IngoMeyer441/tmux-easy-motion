@@ -210,6 +210,16 @@ set -g @easy-motion-verbose "true"
 tmux-easy-motion operates in verbose mode which displays messages when easy-motion is activated and a motion was
 selected.
 
+
+### Auto selection
+
+By setting
+```
+set -g @easy-motion-auto-begin-selection "true"
+```
+
+you can enable the automatic start of selection
+
 ## Other plugins
 
 If you like this plugin and use zsh, please also try my easy-motion port for zsh:

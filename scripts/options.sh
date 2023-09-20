@@ -19,6 +19,7 @@ EASY_MOTION_TARGET_KEYS_DEFAULT="asdghklqwertyuiopzxcvbnmfj;"
 EASY_MOTION_VERBOSE_DEFAULT=0
 EASY_MOTION_DEFAULT_KEY_BINDINGS_DEFAULT=1
 EASY_MOTION_DEFAULT_MOTION_DEFAULT=""
+EASY_MOTION_AUTO_BEGIN_SELECTION_DEFAULT=0
 # --- key bindings
 EASY_MOTION_BINDING_B_DEFAULT="b"
 EASY_MOTION_BINDING_CAPITAL_B_DEFAULT="B"
@@ -60,6 +61,7 @@ EASY_MOTION_TARGET_KEYS_OPTION="@easy-motion-target-keys"
 EASY_MOTION_VERBOSE_OPTION="@easy-motion-verbose"
 EASY_MOTION_DEFAULT_KEY_BINDINGS_OPTION="@easy-motion-default-key-bindings"
 EASY_MOTION_DEFAULT_MOTION_OPTION="@easy-motion-default-motion"
+EASY_MOTION_AUTO_BEGIN_SELECTION_OPTION="@easy-motion-auto-begin-selection"
 # --- key bindings
 EASY_MOTION_BINDING_B_OPTION="@easy-motion-binding-b"
 EASY_MOTION_BINDING_CAPITAL_B_OPTION="@easy-motion-binding-B"
@@ -127,6 +129,9 @@ read_options() {
     assign_tmux_option "EASY_MOTION_DEFAULT_MOTION" \
                        "${EASY_MOTION_DEFAULT_MOTION_OPTION}" \
                        "${EASY_MOTION_DEFAULT_MOTION_DEFAULT}" || return
+    assign_tmux_bool_option "EASY_MOTION_AUTO_BEGIN_SELECTION" \
+                       "${EASY_MOTION_AUTO_BEGIN_SELECTION_OPTION}" \
+                       "${EASY_MOTION_AUTO_BEGIN_SELECTION_DEFAULT}" || return
 
     # key bindings
     # shellcheck disable=SC2034
