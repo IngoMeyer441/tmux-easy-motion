@@ -64,12 +64,13 @@ VALID_MOTIONS = frozenset(
         "bd-j",
         "bd-J",
         "bd-f",
+        "bd-f2",
         "bd-t",
         "bd-T",
         "c",  # camelCase or underscore notation
     )
 )
-MOTIONS_WITH_ARGUMENT = frozenset(("f", "F", "t", "T", "bd-f", "bd-t", "bd-T"))
+MOTIONS_WITH_ARGUMENT = frozenset(("f", "F", "t", "T", "bd-f", "bd-f2", "bd-t", "bd-T"))
 FORWARD_MOTIONS = frozenset(
     (
         "e",
@@ -87,6 +88,7 @@ FORWARD_MOTIONS = frozenset(
         "bd-j",
         "bd-J",
         "bd-f",
+        "bd-f2",
         "bd-t",
         "bd-T",
         "c",
@@ -109,6 +111,7 @@ BACKWARD_MOTIONS = frozenset(
         "bd-j",
         "bd-J",
         "bd-f",
+        "bd-f2",
         "bd-t",
         "bd-T",
         "c",
@@ -139,6 +142,7 @@ MOTION_TO_REGEX = {
     "bd-j": r"^(?:\s*)(\S)",
     "bd-J": r"(\S)(?:\s*)$",
     "bd-f": r"({})",
+    "bd-f2": r"({})",
     "bd-t": r"(.){}",
     "bd-T": r"{}(.)",
     "c": r"(?:_(\w))|(?:[a-z]([A-Z]))",

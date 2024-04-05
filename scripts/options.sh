@@ -44,6 +44,7 @@ EASY_MOTION_BINDING_CAPITAL_BD_E_DEFAULT=""
 EASY_MOTION_BINDING_BD_J_DEFAULT=""
 EASY_MOTION_BINDING_CAPITAL_BD_J_DEFAULT=""
 EASY_MOTION_BINDING_BD_F_DEFAULT="s"
+EASY_MOTION_BINDING_BD_F2_DEFAULT=""
 EASY_MOTION_BINDING_BD_T_DEFAULT=""
 EASY_MOTION_BINDING_CAPITAL_BD_T_DEFAULT=""
 EASY_MOTION_BINDING_C_DEFAULT="c"
@@ -86,6 +87,7 @@ EASY_MOTION_BINDING_CAPITAL_BD_E_OPTION="@easy-motion-binding-bd-E"
 EASY_MOTION_BINDING_BD_J_OPTION="@easy-motion-binding-bd-j"
 EASY_MOTION_BINDING_CAPITAL_BD_J_OPTION="@easy-motion-binding-bd-J"
 EASY_MOTION_BINDING_BD_F_OPTION="@easy-motion-binding-bd-f"
+EASY_MOTION_BINDING_BD_F2_OPTION="@easy-motion-binding-bd-f2"
 EASY_MOTION_BINDING_BD_T_OPTION="@easy-motion-binding-bd-t"
 EASY_MOTION_BINDING_CAPITAL_BD_T_OPTION="@easy-motion-binding-bd-T"
 EASY_MOTION_BINDING_C_OPTION="@easy-motion-binding-c"  # camelCase or underscore notation
@@ -206,6 +208,9 @@ read_options() {
             assign_tmux_option "EASY_MOTION_BINDING_BD_F" \
                                "${EASY_MOTION_BINDING_BD_F_OPTION}" \
                                "${EASY_MOTION_BINDING_BD_F_DEFAULT}" && \
+            assign_tmux_option "EASY_MOTION_BINDING_BD_F2" \
+                               "${EASY_MOTION_BINDING_BD_F2_OPTION}" \
+                               "${EASY_MOTION_BINDING_BD_F2_DEFAULT}" && \
             assign_tmux_option "EASY_MOTION_BINDING_BD_T" \
                                "${EASY_MOTION_BINDING_BD_T_OPTION}" \
                                "${EASY_MOTION_BINDING_BD_T_DEFAULT}" && \
@@ -284,6 +289,9 @@ read_options() {
                                "" && \
             assign_tmux_option "EASY_MOTION_BINDING_BD_F" \
                                "${EASY_MOTION_BINDING_BD_F_OPTION}" \
+                               "" && \
+            assign_tmux_option "EASY_MOTION_BINDING_BD_F2" \
+                               "${EASY_MOTION_BINDING_BD_F2_OPTION}" \
                                "" && \
             assign_tmux_option "EASY_MOTION_BINDING_BD_T" \
                                "${EASY_MOTION_BINDING_BD_T_OPTION}" \
