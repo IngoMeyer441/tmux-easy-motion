@@ -82,12 +82,22 @@ setup_single_key_binding_with_argument() {
             ;;
     esac
 
-    tmux source - <<-EOF
-		bind-key -T "${key_table}" "${key}" command-prompt -1 -p "character:" {
-		    set -g @tmp-easy-motion-argument "%%%"
-		    run-shell -b '${SCRIPTS_DIR}/easy_motion.sh "${server_pid}" "\#{session_id}" "#{window_id}" "#{pane_id}" "${motion}" "#{q:@tmp-easy-motion-argument}"'
-		}
-	EOF
+    if [[ "${motion}" != "bd-f2" ]]; then
+        tmux source - <<-EOF
+			bind-key -T "${key_table}" "${key}" command-prompt -1 -p "character:" {
+				set -g @tmp-easy-motion-argument "%%%"
+				run-shell -b '${SCRIPTS_DIR}/easy_motion.sh "${server_pid}" "\#{session_id}" "#{window_id}" "#{pane_id}" "${motion}" "#{q:@tmp-easy-motion-argument}"'
+			}
+		EOF
+    else
+        tmux source - <<-EOF
+			bind-key -T "${key_table}" "${key}" command-prompt -1 -p "character 1:,character 2:" {
+				set -g @tmp-easy-motion-argument1 "%1"
+				set -g @tmp-easy-motion-argument2 "%2"
+				run-shell -b '${SCRIPTS_DIR}/easy_motion.sh "${server_pid}" "\#{session_id}" "#{window_id}" "#{pane_id}" "${motion}" "#{q:@tmp-easy-motion-argument1}#{q:@tmp-easy-motion-argument2}"'
+			}
+		EOF
+    fi
 }
 
 ensure_target_key_pipe_exists() {

@@ -27,6 +27,7 @@ implementation which adds much more easy-motion movements. All standard vi motio
 - `bd-j`
 - `bd-J`
 - `bd-f`
+- `bd-f2` (search for 2 characters)
 - `bd-t`
 - `bd-T`
 - `c` (target camelCase or underscore notations)
@@ -147,6 +148,7 @@ Available key binding options:
 - `@easy-motion-binding-bd-j`
 - `@easy-motion-binding-bd-J`
 - `@easy-motion-binding-bd-f`
+- `@easy-motion-binding-bd-f2`
 - `@easy-motion-binding-bd-t`
 - `@easy-motion-binding-bd-T`
 - `@easy-motion-binding-c`

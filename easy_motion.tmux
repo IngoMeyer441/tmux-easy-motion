@@ -75,6 +75,7 @@ setup_bindings() {
         setup_single_key_binding "${server_pid}" "${EASY_MOTION_BINDING_BD_J}" "bd-j"
         setup_single_key_binding "${server_pid}" "${EASY_MOTION_BINDING_CAPITAL_BD_J}" "bd-J"
         setup_single_key_binding_with_argument "${server_pid}" "${EASY_MOTION_BINDING_BD_F}" "bd-f"
+        setup_single_key_binding_with_argument "${server_pid}" "${EASY_MOTION_BINDING_BD_F2}" "bd-f2"
         setup_single_key_binding_with_argument "${server_pid}" "${EASY_MOTION_BINDING_BD_T}" "bd-t"
         setup_single_key_binding_with_argument "${server_pid}" "${EASY_MOTION_BINDING_CAPITAL_BD_T}" "bd-T"
         setup_single_key_binding "${server_pid}" "${EASY_MOTION_BINDING_C}" "c"  # camelCase or underscore notation
@@ -90,7 +91,7 @@ setup_bindings() {
                         "${SCRIPTS_DIR}/easy_motion.sh '${server_pid}' '#{session_id}' '#{window_id}' '#{pane_id}' '${EASY_MOTION_DEFAULT_MOTION}'"
                 done
                 ;;
-            f|F|t|T|bd-f|bd-t|bd-T)
+            f|F|t|T|bd-f|bd-f2|bd-t|bd-T)
                 for key_table in "prefix" "copy-mode-vi"; do
                     if ! get_prefix_enabled_for_key_table "${key_table}"; then
                         continue
@@ -98,12 +99,22 @@ setup_bindings() {
                     prefix_for_key_table=$(get_prefix_for_key_table "${key_table}")
                     tmux bind-key -T "${key_table}" "${prefix_for_key_table}" run-shell -b \
                         "${SCRIPTS_DIR}/easy_motion.sh '${server_pid}' '#{session_id}' '#{window_id}' '#{pane_id}' '${EASY_MOTION_DEFAULT_MOTION}'"
-                    tmux source - <<-EOF
-						bind-key -T "${key_table}" "${prefix_for_key_table}" command-prompt -1 -p "character:" {
-						    set -g @tmp-easy-motion-argument "%%%"
-						    run-shell -b '${SCRIPTS_DIR}/easy_motion.sh "${server_pid}" "\#{session_id}" "#{window_id}" "#{pane_id}" "${EASY_MOTION_DEFAULT_MOTION}" "#{q:@tmp-easy-motion-argument}"'
-						}
-					EOF
+                    if [[ "${EASY_MOTION_DEFAULT_MOTION}" != "bd-f2" ]]; then
+                        tmux source - <<-EOF
+							bind-key -T "${key_table}" "${prefix_for_key_table}" command-prompt -1 -p "character:" {
+								set -g @tmp-easy-motion-argument "%%%"
+								run-shell -b '${SCRIPTS_DIR}/easy_motion.sh "${server_pid}" "\#{session_id}" "#{window_id}" "#{pane_id}" "${EASY_MOTION_DEFAULT_MOTION}" "#{q:@tmp-easy-motion-argument}"'
+							}
+						EOF
+                    else
+                        tmux source - <<-EOF
+							bind-key -T "${key_table}" "${prefix_for_key_table}" command-prompt -1 -p "character 1:,character 2:" {
+								set -g @tmp-easy-motion-argument1 "%1"
+								set -g @tmp-easy-motion-argument2 "%2"
+								run-shell -b '${SCRIPTS_DIR}/easy_motion.sh "${server_pid}" "\#{session_id}" "#{window_id}" "#{pane_id}" "${EASY_MOTION_DEFAULT_MOTION}" "#{q:@tmp-easy-motion-argument1}#{q:@tmp-easy-motion-argument2}"'
+							}
+						EOF
+                    fi
                 done
                 ;;
             *)
