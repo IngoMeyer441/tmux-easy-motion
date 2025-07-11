@@ -3,7 +3,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import codecs
+import io
 import re
 import subprocess
 import sys
@@ -733,7 +733,7 @@ def handle_user_input(
 
     def read_capture_buffer():
         # type: () -> str
-        with codecs.open(capture_buffer_filepath, "r", encoding="utf-8") as f:
+        with io.open(capture_buffer_filepath, "r", encoding="utf-8") as f:
             capture_buffer = f.read()
         return capture_buffer
 
@@ -757,7 +757,7 @@ def handle_user_input(
     grouped_indices = None
     first_highlight = True
     try:
-        with codecs.open(command_pipe_filepath, "w", encoding="utf-8") as command_pipe:
+        with io.open(command_pipe_filepath, "w", encoding="utf-8") as command_pipe:
             capture_buffer = read_capture_buffer()
             row, col = cursor_position_row_col
             pane_width, pane_height = pane_size
@@ -800,7 +800,7 @@ def handle_user_input(
                     break
                 # Reopen the named pipe each time because the open operation blocks till the sender also reopens
                 # the pipe
-                with codecs.open(target_key_pipe_filepath, "r", encoding="utf-8") as target_key_pipe:
+                with io.open(target_key_pipe_filepath, "r", encoding="utf-8") as target_key_pipe:
                     next_key = target_key_pipe.readline().rstrip("\n\r")
                 if next_key == "esc":
                     break
