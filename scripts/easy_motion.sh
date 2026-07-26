@@ -114,6 +114,7 @@ easy_motion() {
               "${EASY_MOTION_HIGHLIGHT_2_SECOND_STYLE}" \
               "${motion}" \
               "$(escape_double_quotes_and_backticks "${motion_argument}")" \
+              "${EASY_MOTION_BD_F2_IGNORE_CASE_OPTION}" \
               "$(escape_double_quotes_and_backticks "${EASY_MOTION_TARGET_KEYS}")" \
               "${EASY_MOTION_CURSOR_POSITION}" \
               "${EASY_MOTION_PANE_SIZE}" \

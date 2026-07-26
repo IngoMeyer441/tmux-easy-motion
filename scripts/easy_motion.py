@@ -362,7 +362,7 @@ def display_tmux_message(message):
 
 
 def parse_arguments():
-    # type: () -> Tuple[str, str, str, str, str, Optional[str], str, Tuple[int, int], Tuple[int, int], str, str, str]
+    # type: () -> Tuple[str, str, str, str, str, Optional[str], str, str, Tuple[int, int], Tuple[int, int], str, str, str]
     if PY2:
         argv = [arg.decode("utf-8") for arg in sys.argv]
     else:
@@ -413,6 +413,10 @@ def parse_arguments():
         raise MissingMotionArgumentError("No motion argument given.")
     motion_argument = argv[0] if motion in MOTIONS_WITH_ARGUMENT else None
     argv.pop(0)
+    # Extract motion ignore case
+    if not argv:
+        raise MissingTargetKeysError("No motion ignore case given.")
+    motion_ignore_case = argv.pop(0) == '1'
     # Extract target keys
     if not argv:
         raise MissingTargetKeysError("No target keys given.")
@@ -454,6 +458,7 @@ def parse_arguments():
         highlight_2_second_style_code,
         motion,
         motion_argument,
+        motion_ignore_case,
         target_keys,
         cursor_position_row_col,
         pane_size,
@@ -534,13 +539,13 @@ def adjust_text(cursor_position, text, is_forward_motion, motion):
     return text, indices_offset
 
 
-def motion_to_indices(cursor_position, text, motion, motion_argument):
-    # type: (int, str, str, Optional[str]) -> Iterable[int]
+def motion_to_indices(cursor_position, text, motion, motion_argument, motion_bd_f2_ignore_case):
+    # type: (int, str, str, Optional[str], bool) -> Iterable[int]
     indices_offset = 0
     if motion in FORWARD_MOTIONS and motion in BACKWARD_MOTIONS:
         # Split the motion into the forward and backward motion and handle these recursively
-        forward_motion_indices = motion_to_indices(cursor_position, text, motion + ">", motion_argument)
-        backward_motion_indices = motion_to_indices(cursor_position, text, motion + "<", motion_argument)
+        forward_motion_indices = motion_to_indices(cursor_position, text, motion + ">", motion_argument, motion_bd_f2_ignore_case)
+        backward_motion_indices = motion_to_indices(cursor_position, text, motion + "<", motion_argument, motion_bd_f2_ignore_case)
         # Create a generator which yields the indices round-robin
         indices = (
             index
@@ -556,7 +561,10 @@ def motion_to_indices(cursor_position, text, motion, motion_argument):
         if motion_argument is None:
             regex = re.compile(MOTION_TO_REGEX[motion], flags=re.MULTILINE)
         else:
-            regex = re.compile(MOTION_TO_REGEX[motion].format(re.escape(motion_argument)), flags=re.MULTILINE)
+            flags = re.MULTILINE
+            if motion == "bd-f2" and motion_bd_f2_ignore_case:
+                flags |= re.IGNORECASE
+            regex = re.compile(MOTION_TO_REGEX[motion].format(re.escape(motion_argument)), flags=flags)
         matches = regex.finditer(text)
         if not is_forward_motion:
             matches = reversed(list(matches))
@@ -721,6 +729,7 @@ def handle_user_input(
     highlight_2_second_style_code,
     motion,
     motion_argument,
+    motion_bd_f2_ignore_case,
     target_keys,
     cursor_position_row_col,
     pane_size,
@@ -764,7 +773,7 @@ def handle_user_input(
             cursor_position = convert_row_col_to_text_pos(row, col, capture_buffer)
             while True:
                 if grouped_indices is None:
-                    indices = motion_to_indices(cursor_position, capture_buffer, motion, motion_argument)
+                    indices = motion_to_indices(cursor_position, capture_buffer, motion, motion_argument, motion_bd_f2_ignore_case)
                     grouped_indices = group_indices(indices, len(target_keys))
                 else:
                     try:
@@ -822,6 +831,7 @@ def main():
             highlight_2_second_style_code,
             motion,
             motion_argument,
+            motion_bd_f2_ignore_case,
             target_keys,
             cursor_position_row_col,
             pane_size,
@@ -836,6 +846,7 @@ def main():
             highlight_2_second_style_code,
             motion,
             motion_argument,
+            motion_bd_f2_ignore_case,
             target_keys,
             cursor_position_row_col,
             pane_size,

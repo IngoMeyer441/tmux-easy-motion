@@ -63,6 +63,7 @@ EASY_MOTION_VERBOSE_OPTION="@easy-motion-verbose"
 EASY_MOTION_DEFAULT_KEY_BINDINGS_OPTION="@easy-motion-default-key-bindings"
 EASY_MOTION_DEFAULT_MOTION_OPTION="@easy-motion-default-motion"
 EASY_MOTION_AUTO_BEGIN_SELECTION_OPTION="@easy-motion-auto-begin-selection"
+EASY_MOTION_BD_F2_IGNORE_CASE_OPTION=1
 # --- key bindings
 EASY_MOTION_BINDING_B_OPTION="@easy-motion-binding-b"
 EASY_MOTION_BINDING_CAPITAL_B_OPTION="@easy-motion-binding-B"
